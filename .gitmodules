@@ -1,12 +1,12 @@
 [submodule "android"]
 	path = android
-	url = /Volumes/File/OpenClaw/workspace/iina-remote-android
+	url = git@github.com:AltairCardinal/iina-remote-android.git
 [submodule "figma"]
 	path = figma
-	url = /Volumes/File/OpenClaw/workspace/iina-remote-figma-plugin
+	url = git@github.com:AltairCardinal/iina-remote-figma-plugin.git
 [submodule "macos"]
 	path = macos
-	url = /Volumes/File/OpenClaw/workspace/iina-remote-macos
+	url = git@github.com:AltairCardinal/iina-remote-macos.git
 [submodule "server"]
 	path = server
-	url = /Volumes/File/OpenClaw/workspace/iina-remote-server
+	url = git@github.com:AltairCardinal/iina-remote-server.git
