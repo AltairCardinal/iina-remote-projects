@@ -1,0 +1,12 @@
+[submodule "android"]
+	path = android
+	url = /Volumes/File/OpenClaw/workspace/iina-remote-android
+[submodule "figma"]
+	path = figma
+	url = /Volumes/File/OpenClaw/workspace/iina-remote-figma-plugin
+[submodule "macos"]
+	path = macos
+	url = /Volumes/File/OpenClaw/workspace/iina-remote-macos
+[submodule "server"]
+	path = server
+	url = /Volumes/File/OpenClaw/workspace/iina-remote-server
