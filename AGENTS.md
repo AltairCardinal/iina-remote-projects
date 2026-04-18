@@ -32,11 +32,27 @@ cd android && ./gradlew assembleDebug
 
 There are **zero tests** and no lint/typecheck/CI configs in any sub-project. Run builds to verify.
 
+## TDD workflow (mandatory)
+
+**Any development must follow strict Red-Green TDD:**
+
+1. **Plan first** — before writing any code, plan the complete test flow: what to test, edge cases, test order.
+2. **Red** — write a failing test that captures the expected behavior.
+3. **Green** — write the minimal code to make the test pass.
+4. **Refactor** — clean up while keeping tests green.
+5. **Repeat** — incrementally add tests and implementation.
+
+Do not write production code without a corresponding failing test. Do not skip the planning step.
+
 ## macOS app specifics
 
 - LSUIElement app (no Dock icon). Uses XcodeGen (`project.yml`) to generate `.xcodeproj`.
 - If `.xcodeproj` already exists, `xcodegen generate` will overwrite it.
 - `project.yml` includes `MACOSX_DEPLOYMENT_TARGET: "13.0"`, `SWIFT_VERSION: "5.9"`.
+- After building, copy the app to `/Applications` for daily use:
+  ```bash
+  cp -r macos/build/Debug/IINA\ Remote.app /Applications/
+  ```
 
 ## Android app specifics
 
@@ -51,6 +67,10 @@ There are **zero tests** and no lint/typecheck/CI configs in any sub-project. Ru
 | `docs/CONTROL_METHODS.md` | Explains IPC socket vs AppleScript dual-control approach |
 | `docs/SPEC.md` | Full feature spec |
 | `server/README.md` | All API endpoints and pairing flow |
+
+## Figma prototype must stay in sync
+
+`figma/index.html` is an interactive HTML prototype. **Whenever Android app interactions change (UI layout, navigation flow, control behavior, screen structure), the same changes must be applied to `figma/index.html`** so the prototype always matches the real app.
 
 ## IINA is required at runtime
 
