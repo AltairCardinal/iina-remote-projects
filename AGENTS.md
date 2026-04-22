@@ -9,22 +9,57 @@ Each top-level dir (`server/`, `macos/`, `android/`, `figma/`) is a **separate g
 The macOS app's post-build script copies `server/iina-remote-server` into the app bundle. **Build server first**, then macos.
 
 ```bash
-# Server (universal binary: Intel + Apple Silicon)
+# Server (Intel)
 cd server && ./BUILD.sh
-# OR quick single-arch build:
-cd server && go build -o iina-remote-server .
 
 # macOS (requires XcodeGen + Xcode 15+)
-cd macos && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Debug build
+cd ../macos && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Debug build
 
 # Android (JDK 21, minSdk 26, targetSdk 35)
-cd android && ./gradlew assembleDebug
+cd ../android && ./gradlew assembleDebug
 ```
+
+## Build Version System
+
+All platforms use the same version format: `0.8.YYMMddHHmm` (e.g., `0.8.2604221957`)
+
+### Version generation
+
+| Platform | How | Output |
+|----------|-----|--------|
+| **Server** | `BUILD.sh` `date +%y%m%d%H%M` | `main.version` variable |
+| **macOS** | `preBuildScripts` generates `VersionInfo.swift` | `VersionInfo.marketingVersion` |
+| **Android** | Gradle shell `date` command | `versionName` |
+
+### Build verification
+
+After building, verify the version:
+
+```bash
+# Server
+./iina-remote-server --version
+
+# macOS: check status bar menu → "版本 0.8.xxxxxx"
+
+# Android: Settings → About → version 0.8.xxxxxx
+```
+
+## macOS post-build deployment
+
+The macOS build includes a post-build script that **automatically stops running instances** before deploying:
+
+1. Stops any running `iina-remote-server` process
+2. Quits the running `IINA Remote` macOS app
+3. Copies the new server binary into the app bundle
+4. Ad-hoc codesigns the binary
+5. **Copies the entire app bundle to `/Applications/`**
+
+This ensures the new binary can be copied even if the old server is running.
 
 ## Go server quirks
 
 - `BUILD.sh` sets `GOPROXY=https://goproxy.cn,direct` and `GOSUMDB=off` (China mirror). Override if needed.
-- `BUILD.sh` expects Go at `$HOME/go/go/bin/go`, not system Go.
+- `BUILD.sh` auto-detects Go via `which go`.
 - The binary is ad-hoc codesigned in the macOS post-build script; without this, macOS Hardened Runtime blocks the Go server.
 - Server also listens on `port+1` (127.0.0.1 only) for an internal pair-code endpoint.
 
@@ -66,6 +101,7 @@ Do not write production code without a corresponding failing test. Do not skip t
 |------|-----|
 | `docs/CONTROL_METHODS.md` | Explains IPC socket vs AppleScript dual-control approach |
 | `docs/SPEC.md` | Full feature spec |
+| `docs/MPV_IPC_REFERENCE.md` | mpv IPC properties and commands (tested working) |
 | `server/README.md` | All API endpoints and pairing flow |
 
 ## Figma prototype must stay in sync
@@ -74,4 +110,23 @@ Do not write production code without a corresponding failing test. Do not skip t
 
 ## IINA is required at runtime
 
-The Go server talks to IINA via IPC socket at `localhost:8080`. IINA must be launched with `--input-ipc-server` or have IPC enabled in IINA → Settings → Advanced.
+The Go server talks to IINA via IPC socket at `/tmp/iina.sock`. IINA must be launched with `--input-ipc-server=/tmp/iina.sock` (via command line) or have IPC enabled in IINA → Settings → Advanced.
+
+## mpv IPC important notes
+
+- **Mute**: Use `mute` property, NOT `ao-mute`
+- **Playlist navigation**: Only works when playlist has multiple items
+- **Delay changes**: Use `add <property> <delta>` for relative changes
+
+## IINA Control Priority Rule
+
+**Any IINA control must use IPC first, AppleScript second.**
+
+When implementing any new IINA control feature:
+
+1. **Always prefer IPC** — IPC is faster, more reliable, and doesn't require IINA to be in foreground
+2. **Reference `docs/mpv-ipc-full-spec.md`** for complete IPC command/property specifications
+3. **Reference `docs/MPV_IPC_REFERENCE.md`** for quick reference of tested working commands
+4. **Only use AppleScript as fallback** when IPC is unavailable
+
+This rule applies to all IINA control code in `server/iina/applescript.go`.
