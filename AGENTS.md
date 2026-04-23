@@ -44,6 +44,16 @@ After building, verify the version:
 # Android: Settings → About → version 0.8.xxxxxx
 ```
 
+## Build artifact reporting
+
+Every build must report artifacts without truncation. Rules:
+
+1. **Never use `tail` or output truncation** — report full build output or use `grep` to extract specific lines
+2. **Always include `finalizedBy reportBuildInfo`** — Android build uses `finalizedBy` to ensure reporting task runs even on UP-TO-DATE builds
+3. **Report must include**:
+   - Build version number
+   - Artifact path(s) (APK/Binary/App location)
+
 ## macOS post-build deployment
 
 The macOS build includes a post-build script that **automatically stops running instances** before deploying:
@@ -130,3 +140,14 @@ When implementing any new IINA control feature:
 4. **Only use AppleScript as fallback** when IPC is unavailable
 
 This rule applies to all IINA control code in `server/iina/applescript.go`.
+
+## Bug Investigation Rule
+
+**When debugging bugs, do not rely on any fallback path — the primary path must be fixed.**
+
+1. **Do not assume fallback behavior is acceptable** — a bug in the primary path is still a bug even if a fallback exists
+2. **Do not use fallbacks as justification** — "there's a fallback" is not a valid reason to skip fixing the main issue
+3. **Trace the full code path** — including all branches (if/else, try/catch, fallback paths)
+4. **Fix the root cause** — if a fallback exists because the primary path is broken, fix the primary path
+
+This applies to all bug investigation: IPC vs AppleScript fallback, optimistic update vs polling overwrite, etc.
