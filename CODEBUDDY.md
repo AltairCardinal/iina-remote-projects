@@ -69,12 +69,12 @@ Min SDK 26, target/compile SDK 35.
 ### macOS App (Swift) — `macos/`
 
 - LSUIElement app (menu bar only, no Dock icon)
-- **`AppDelegate.swift`** — Startup: permissions check → IINA launch → server start
+- **`AppDelegate.swift`** — Startup: IINA launch → server start
 - **`StatusBarController.swift`** — Menu bar UI, polls server `/api/v1/pair/challenge` every 5s for pairing code display
 - **`HTTPServerManager.swift`** — Manages Go server process lifecycle (launch, monitor, restart)
 - **`PairingManager.swift`** — Pairing state management
 - **`SettingsManager.swift`** — Port and visible directory settings, writes `settings.json` read by Go server on startup
-- **`PermissionsManager.swift`** — TCC permission checks (Accessibility, etc.)
+
 - **`PairingOverlayWindow.swift`** — Floating NSPanel showing pairing code on screen
 
 ### Android App (Kotlin) — `android/`
@@ -95,7 +95,7 @@ Min SDK 26, target/compile SDK 35.
 
 ## Key Design Decisions
 
-- **Dual IINA control**: IPC socket for reads (fast, reliable), AppleScript for writes and menu UI access (requires Accessibility permission). See `docs/CONTROL_METHODS.md` for detailed rationale.
+- **Dual IINA control**: IPC socket for reads (fast, reliable), AppleScript/System Events for writes and menu UI access (requires Accessibility permission when IPC unavailable). See `docs/CONTROL_FUNCTIONS_STATUS.md` for implementation details.
 - **File browsing security**: `browse` endpoint restricts access to `VisiblePaths` (defaults to `/Volumes` and user home). Configured via macOS app's `SettingsManager` → `settings.json`.
 - **Each sub-project has its own `.git`** — originally separate repositories collected into this workspace.
 - **IINA must have IPC enabled**: IINA → Settings → Advanced → Enable IPC Server, or launch with `--input-ipc-server`.
@@ -104,6 +104,8 @@ Min SDK 26, target/compile SDK 35.
 
 - `docs/SPEC.md` — Complete feature specification
 - `docs/CONTROL_METHODS.md` — IINA control methods reference (IPC vs AppleScript)
+- `docs/CONTROL_FUNCTIONS_STATUS.md` — All control functions with IPC/AppleScript implementation status
+- `docs/MPV_IPC_REFERENCE.md` — mpv IPC protocol quick reference
 - `docs/IMPLEMENTATION_PLAN.md` — Development plan
 - `docs/PROGRESS.md` — Development progress log
 - `docs/DEPLOY.md` — Deployment guide

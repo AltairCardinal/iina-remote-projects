@@ -1,23 +1,27 @@
 # IINA Control Methods Report
 
-**Research Date:** 2026-04-07  
-**IINA Version:** Unknown (latest)  
-**Test File:** `/Users/altair/Documents/Michiko and Hatchin - 14.mkv`  
+> **Note:** This document is historical research from 2026-04-07. For current implementation status, see [`CONTROL_FUNCTIONS_STATUS.md`](./CONTROL_FUNCTIONS_STATUS.md).
+
+**Research Date:** 2026-04-07
+**IINA Version:** Unknown (latest)
+**Test File:** `/Users/altair/Documents/Michiko and Hatchin - 14.mkv`
 **IINA IPC Socket:** Configured at `ipc:///tmp/iina.sock` (preference set but socket not active)
 
 ---
 
 ## Executive Summary
 
+> **Current Status:** IPC socket is now working. The Go server implements IPC-first with AppleScript fallback. See `CONTROL_FUNCTIONS_STATUS.md` for details.
+
 IINA is a macOS media player built on mpv. It offers **three viable control methods**:
 
-1. **AppleScript UI Menu Bar** (PRIMARY) — Full access to all menus, track switching, playback control
-2. **Keyboard Shortcuts via AppleScript** (SECONDARY) — mpv keybindings sent via CGEvent
-3. **mpv IPC Socket** (POTENTIAL) — Configured but socket file doesn't exist; requires IINA restart
+1. **mpv IPC Socket** (PRIMARY) — Now working, fast and reliable for reads and writes
+2. **AppleScript UI Menu Bar** (FALLBACK) — Used when IPC unavailable, requires Accessibility permission
+3. **Keyboard Shortcuts via AppleScript** (FALLBACK) — mpv keybindings sent via System Events
 
-**Critical Finding:** IINA has **NO native AppleScript scripting dictionary** — it cannot be scripted via `tell application "IINA" to...`. All control must go through **UI scripting** via System Events + Process.
+**Critical Finding (Historical):** IINA has **NO native AppleScript scripting dictionary** — it cannot be scripted via `tell application "IINA" to...`. All control must go through **UI scripting** via System Events + Process.
 
-**Getting playback position** is the biggest gap — none of the methods provide direct position readout. Window title only shows filename.
+**Current Implementation:** IPC-first design with AppleScript fallback for most functions. Some functions (Screenshot, WindowOntop) are AppleScript-only.
 
 ---
 
