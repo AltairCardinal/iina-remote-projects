@@ -77,14 +77,23 @@ These functions use IPC only. If IPC is unavailable, they return an error.
 
 ## Category C: AppleScript Only (No IPC)
 
-These functions have **no IPC implementation** and require Accessibility permission.
+These functions have **no IPC implementation**. Two types:
+
+**C1: Requires Accessibility permission** (uses `tell application "System Events"`):
 
 | Function | AppleScript | Notes |
 |---------|------------|-------|
 | `Screenshot()` | `tell application "IINA" to activate` + S key (31) | Triggers IINA's built-in screenshot |
 | `WindowOntop()` | `tell application "IINA" to activate` + T key (17) | Cycles "窗口置顶" state |
-| `SetSystemVolume()` | `set volume output volume <vol>` | **macOS system volume**, NOT IINA |
-| `GetSystemVolume()` | `output volume of (get volume settings)` | **macOS system volume**, NOT IINA |
+
+**C2: No special permission required** (uses built-in AppleScript commands):
+
+| Function | AppleScript | Notes |
+|---------|------------|-------|
+| `SetSystemVolume()` | `set volume output volume <vol>` | macOS system volume, **verified: no permission needed** |
+| `GetSystemVolume()` | `output volume of (get volume settings)` | macOS system volume, **verified: no permission needed** |
+
+> **Tested:** `set volume output volume` and `output volume of (get volume settings)` execute successfully without Accessibility permission.
 
 ---
 
@@ -106,8 +115,8 @@ All handlers in `server/handler/` wrap the iina package functions:
 | `PlaybackMute` | playback.go:149 | `iina.ToggleMute()` | A | Only if IPC fails |
 | `GetABLoop` | playback.go:163 | `iina.GetABLoop()` | In-memory | No |
 | `SetABLoop` | playback.go:180 | `iina.SetABLoopA/B/ClearABLoop()` | B | No |
-| `GetSystemVolume` | playback.go:206 | `iina.GetSystemVolume()` | C | **YES** |
-| `SetSystemVolume` | playback.go:221 | `iina.SetSystemVolume()` | C | **YES** |
+| `GetSystemVolume` | playback.go:206 | `iina.GetSystemVolume()` | C2 | No (built-in AS) |
+| `SetSystemVolume` | playback.go:221 | `iina.SetSystemVolume()` | C2 | No (built-in AS) |
 | `GetPlaylist` | playback.go:236 | `iina.GetPlaylist()` | A | Only if IPC fails |
 | `GetStatus` | health.go:195 | `iina.GetFullStatus()` | A | Only if IPC fails |
 | `GetAudio` | media.go:12 | `iina.GetAudioTracks()` | A | Only if IPC fails |
@@ -146,7 +155,8 @@ All handlers in `server/handler/` wrap the iina package functions:
 |----------|-------|------------------------|
 | **A: IPC + AppleScript Fallback** | 25 | Only when IPC fails |
 | **B: IPC Only (No Fallback)** | 15 | **Never** (IPC required) |
-| **C: AppleScript Only** | 4 | **Always** |
+| **C1: AppleScript Only (Accessibility required)** | 2 | Screenshot, WindowOntop |
+| **C2: AppleScript Only (no permission needed)** | 2 | GetSystemVolume, SetSystemVolume |
 
 ### Functions Requiring Accessibility Permission (when IPC unavailable)
 
@@ -167,10 +177,15 @@ All handlers in `server/handler/` wrap the iina package functions:
 | GetStatus, GetFullStatus | A | Limited fallback |
 | OpenFile | A | Falls back to quit+open |
 | GetPlaylist | A | Limited fallback |
-| **Screenshot** | **C** | **No IPC - always requires Accessibility** |
-| **WindowOntop** | **C** | **No IPC - always requires Accessibility** |
-| **GetSystemVolume** | **C** | **No IPC - always requires Accessibility** |
-| **SetSystemVolume** | **C** | **No IPC - always requires Accessibility** |
+| **Screenshot** | **C1** | **No IPC - always requires Accessibility** |
+| **WindowOntop** | **C1** | **No IPC - always requires Accessibility** |
+
+### Functions NOT Requiring Any Special Permission
+
+| Function | Category | Why No Permission Needed |
+|----------|----------|------------------------|
+| **GetSystemVolume** | **C2** | Built-in AppleScript (`get volume settings`) - **tested, works without permission** |
+| **SetSystemVolume** | **C2** | Built-in AppleScript (`set volume`) - **tested, works without permission** |
 
 ---
 
@@ -189,12 +204,14 @@ All handlers in `server/handler/` wrap the iina package functions:
 
 2. **15 functions are IPC-only** - will fail if IPC unavailable, but don't require Accessibility
 
-3. **4 functions are AppleScript-only** - require Accessibility permission:
+3. **2 functions are AppleScript-only and require Accessibility**:
    - `Screenshot()` - IINA's built-in screenshot
    - `WindowOntop()` - toggle always-on-top
-   - `GetSystemVolume()` / `SetSystemVolume()` - macOS system volume (not IINA)
 
-4. **IPC-first design means Accessibility is not strictly required** for most operations - only when IPC socket is unavailable AND using AppleScript-only functions
+4. **2 functions are AppleScript-only but require NO special permission** (verified by testing):
+   - `GetSystemVolume()` / `SetSystemVolume()` - use built-in AppleScript commands
+
+5. **IPC-first design means Accessibility is not strictly required** for most operations - only when IPC socket is unavailable AND using functions in Category C1
 
 ---
 
