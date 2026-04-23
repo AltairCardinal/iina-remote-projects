@@ -24,14 +24,18 @@ Split the 1718-line `iina/applescript.go` into focused files, and separate handl
 
 ### Steps
 
-- [ ] **1.1** Create `iina/types.go` - Extract all type definitions (Status, Track, Chapter, FullStatus, BrowseEntry, BrowseResult, PlaylistEntry, ipcCommand, ipcResponse)
-- [ ] **1.2** Create `iina/ipc.go` - Extract IPC socket communication (ipcSend, IsIPCAvailable, toFloat64, getStatusViaIPC, getTracksViaIPC, getChaptersViaIPC, getPlaylistViaIPC, getFileDuration)
-- [ ] **1.3** Create `iina/playback.go` - Extract playback control functions (TogglePlay, Play, Pause, Seek, SetVolume, SetSpeed, PrevTrack, NextTrack, etc.)
-- [ ] **1.4** Create `iina/status.go` - Extract status queries (GetStatus, GetFullStatus, OpenFile, IsIINARunning, EnsureIINARunning, GetPlaylist)
-- [ ] **1.5** Reduce `iina/applescript.go` to ~650 lines - Keep only AppleScript helpers, key constants, menu helpers
-- [ ] **1.6** Split `handler/health.go` - Create health.go (health check), pairing.go (pairing handlers), middleware.go (auth middleware)
-- [ ] **1.7** Update `main.go` route registrations - Ensure all route references are correct after file moves
-- [ ] **1.8** Build and test - Run `go build ./...` and `go test ./...`
+- [x] **1.1** Create `iina/types.go` - ✅ Created (83 lines)
+- [x] **1.2** Create `iina/ipc.go` - ✅ Created (321 lines)
+- [x] **1.3** Create `iina/playback.go` - ✅ Created (555 lines)
+- [x] **1.4** Create `iina/status.go` - ✅ Created (199 lines)
+- [x] **1.5** Reduce `iina/applescript.go` to ~650 lines - ✅ Reduced to 494 lines
+- [x] **1.6** Split `handler/health.go` - ✅ Created health.go, pairing.go, middleware.go
+- [x] **1.7** Update `main.go` route registrations - ✅ No changes needed (routes still work)
+- [x] **1.8** Build and test - ✅ `go build ./...` and `go test ./...` pass
+
+### PR
+- **PR**: https://github.com/AltairCardinal/iina-remote-server/pull/1
+- **Status**: Awaiting review/merge
 
 ### Target Structure
 
