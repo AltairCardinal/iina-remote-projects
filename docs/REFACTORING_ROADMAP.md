@@ -35,7 +35,62 @@ Split the 1718-line `iina/applescript.go` into focused files, and separate handl
 
 ### PR
 - **PR**: https://github.com/AltairCardinal/iina-remote-server/pull/1
-- **Status**: Awaiting review/merge
+- **Status**: Merged ✅
+
+---
+
+## Android Refactoring Plan (Phase 2)
+
+### Status
+- [x] **2.1** Delete empty Track.kt - ✅
+- [x] **2.2** Fix VolumeSliderStateTest - ✅ Fixed behavioral differences
+- [x] **2.3** Create data/model/PairedServerInfo.kt - ✅
+- [x] **2.4** Create data/model/DiscoveredServer.kt - ✅
+- [x] **2.5** Create domain/model/PlaybackModels.kt - ✅ (Chapter, ABLoop)
+- [x] **2.6** Move VolumeSliderState.kt to ui/state/ - ✅
+- [x] **2.7** Move VolumeRow.kt to ui/components/ - ✅
+- [x] **2.8** Move PlaylistResponse to ApiModels.kt - ✅
+- [x] **2.9** Split MainScreen.kt - ✅ (5 new files in ui/screens/main/)
+- [x] **2.10** Split VideoControlSheet.kt - ✅ (6 new files in ui/components/video/)
+- [x] **2.11** Remove empty directories - ✅ (6 dirs removed)
+- [x] **2.12** Build and test - ✅ BUILD SUCCESSFUL
+
+### PR
+- **PR**: https://github.com/AltairCardinal/iina-remote-android/pull/1
+- **Status**: Merged ✅
+
+---
+
+## macOS Refactoring Plan (Phase 3)
+
+### Status
+- [x] **3.1** Delete TrackTestWindowController.swift - ✅ (388 lines of dead code)
+- [x] **3.2** Rename PairingManager.swift - ✅ Renamed to DeviceTokenStore.swift
+- [x] **3.3** Split IINAManager.swift - ✅ IINASocketServer + IINALifecycleManager
+- [x] **3.4** Consolidate IINA launch/wait logic - ✅ Removed duplication in AppDelegate
+- [x] **3.5** Split StatusBarController.swift - ✅ StatusBarController + PairingUIController + PairCodePollingService
+- [x] **3.6** Fix HTTPServerManager silent fallback - ✅ Shows "模拟模式" when simulated
+- [x] **3.7** Fix retain cycle - ✅ Already fixed in Step 3.5
+- [x] **3.8** Split SettingsWindowController.swift - ✅ (5 new files in Settings/)
+- [x] **3.9** Build and test - ✅ BUILD SUCCEEDED
+
+### PR
+- **PR**: https://github.com/AltairCardinal/iina-remote-macos/pull/1
+- **Status**: Awaiting review
+
+---
+
+## Documentation (Phase 4)
+
+### Status
+- [x] **4.1** Create docs/PROTOCOL.md - ✅ Complete API documentation
+- [x] **4.2** Create docs/ARCHITECTURE.md - ✅ System architecture with diagrams
+- [x] **4.3** Create docs/IPC_WORKAROUNDS.md - ✅ IINA IPC workaround documentation
+
+### Created Files
+- `docs/PROTOCOL.md` - Complete HTTP API documentation
+- `docs/ARCHITECTURE.md` - System architecture with three-layer description
+- `docs/IPC_WORKAROUNDS.md` - IINA IPC bugs and workarounds
 
 ### Target Structure
 
