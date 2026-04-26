@@ -1,0 +1,34 @@
+#!/bin/bash
+# post-commit hook: remind to rebuild macOS app after server changes
+# This hook runs after a commit is created
+
+# Get the root directory of the git repo
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Get the list of files changed in the last commit
+CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
+
+# Check if any server files were changed
+SERVER_CHANGED=false
+if echo "$CHANGED_FILES" | grep -q "^server/"; then
+    SERVER_CHANGED=true
+fi
+
+# Check if macos was also changed in the same commit
+MACOS_CHANGED=false
+if echo "$CHANGED_FILES" | grep -q "^macos/"; then
+    MACOS_CHANGED=true
+fi
+
+# If server changed but macOS didn't, warn the user
+if [ "$SERVER_CHANGED" = true ] && [ "$MACOS_CHANGED" = false ]; then
+    echo ""
+    echo "⚠️  WARNING: Server files were committed but macOS app was NOT rebuilt!"
+    echo ""
+    echo "Remember to:"
+    echo "  1. cd macos && xcodegen generate && xcodebuild ..."
+    echo "  2. git add macos && git commit && git push"
+    echo ""
+    echo "The server binary needs to be copied into the macOS app bundle."
+    echo ""
+fi
