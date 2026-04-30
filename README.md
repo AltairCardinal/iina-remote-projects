@@ -33,12 +33,24 @@ Android App  ←→  Go Server  ←→  IINA (mpv)
   (Kotlin)       (Go :8765)     (:8080 IPC)
                       ↑
               macOS Menu Bar App
-               (Swift/ObjC)
+               (内置 Server)
 ```
 
 - **通信**：HTTP REST API + WebSocket，JWT 认证（7天有效）
 - **配对**：首次连接输入 6 位验证码，生成设备 Token
 - **发现**：Android 扫描局域网 8765 端口
+
+## 下载预构建版本
+
+无需自行编译，直接下载使用：
+
+| 平台 | 下载 | 说明 |
+|------|------|------|
+| **macOS** | `IINA-Remote.app.zip` | Menu Bar App，**内置 Go Server**，下载即用 |
+| **Android** | `app-debug.apk` | 安装到手机即可 |
+| **Server** | `iina-remote-server` | 独立 Server 二进制（跨平台），供无 macOS 用户使用 |
+
+**注意**：macOS App 已包含 Server，无需单独下载 Server。
 
 ## 快速开始
 
@@ -141,8 +153,22 @@ Android App  ←→  Go Server  ←→  IINA (mpv)
   (Kotlin)       (Go :8765)     (:8080 IPC)
                       ↑
               macOS Menu Bar App
-               (Swift/ObjC)
+               (Built-in Server)
 ```
+
+- **Communication**: HTTP REST API + WebSocket, JWT authentication (7 days)
+- **Pairing**: 6-digit verification code on first connection
+- **Discovery**: Android scans LAN port 8765
+
+## Download Pre-built Binaries
+
+| Platform | Download | Description |
+|----------|----------|-------------|
+| **macOS** | `IINA-Remote.app.zip` | Menu Bar App with **built-in Go Server** |
+| **Android** | `app-debug.apk` | Install on your phone |
+| **Server** | `iina-remote-server` | Standalone server binary (cross-platform) for non-macOS users |
+
+**Note**: macOS app already includes the server, no need to download separately.
 
 ### Tech Stack
 
