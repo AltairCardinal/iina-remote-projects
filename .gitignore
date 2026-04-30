@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+*.swp
+._*
+
+# IDE
+.vscode/
+.idea/
+
+# Build outputs
+*.apk
+*.ipa
+*.xcarchive
+build/
+*.app
+
+# Go
+*.exe
+.iina-remote-server
+
+# Node
+node_modules/
+package-lock.json
+
+# Screenshots
+Snipaste_*.png
+*.jpeg
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+*.temp
