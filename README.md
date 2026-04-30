@@ -50,23 +50,34 @@ Android App  ←→  Go Server  ←→  IINA (mpv)
 - Android Studio / JDK 21
 - IINA 播放器
 
-### 1. 构建 Go Server
+### 构建
+
+#### 调试构建
 
 ```bash
-cd server/
-chmod +x BUILD.sh
-./BUILD.sh
+# Server
+cd server/ && ./BUILD.sh
+
+# macOS
+cd ../macos/ && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Debug build
+
+# Android
+cd ../android/ && ./gradlew assembleDebug
 ```
 
-### 2. 构建 macOS Menu Bar App
+#### 发布构建
 
 ```bash
-cd macos/
-xcodegen generate
-xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Debug build
+# 所有平台
+./BUILD_RELEASE.sh
+
+# 或分别构建
+cd server/ && go build -ldflags "-X main.version=0.8.$(date +%y%m%d%H%M)" -o iina-remote-server .
+cd ../macos/ && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Release build
+cd ../android/ && ./gradlew assembleRelease
 ```
 
-### 3. 配置 IINA IPC
+### 配置 IINA IPC
 
 IINA → 设置 → 高级 → 启用 IPC 服务器
 
@@ -78,7 +89,11 @@ open -a IINA --args --input-ipc-server=/tmp/iina.sock
 ### 4. 安装 Android App
 
 ```bash
+# Debug
 adb install android/app/build/outputs/apk/debug/app-debug.apk
+
+# Release
+adb install android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ## 文档

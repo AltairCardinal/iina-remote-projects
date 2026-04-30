@@ -8,6 +8,8 @@ Each top-level dir (`server/`, `macos/`, `android/`, `figma/`) is a **separate g
 
 The macOS app's post-build script copies `server/iina-remote-server` into the app bundle. **Build server first**, then macos.
 
+### Debug Build
+
 ```bash
 # Server (Intel)
 cd server && ./BUILD.sh
@@ -17,6 +19,23 @@ cd ../macos && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -sc
 
 # Android (JDK 21, minSdk 26, targetSdk 35)
 cd ../android && ./gradlew assembleDebug
+```
+
+### Release Build
+
+```bash
+# All platforms (from project root)
+./BUILD_RELEASE.sh
+
+# Or build individually:
+# Server
+cd server && go build -ldflags "-X main.version=0.8.$(date +%y%m%d%H%M)" -o iina-remote-server .
+
+# macOS
+cd ../macos && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Release build
+
+# Android
+cd ../android && ./gradlew assembleRelease
 ```
 
 ## Build Version System
@@ -94,9 +113,14 @@ Do not write production code without a corresponding failing test. Do not skip t
 - LSUIElement app (no Dock icon). Uses XcodeGen (`project.yml`) to generate `.xcodeproj`.
 - If `.xcodeproj` already exists, `xcodegen generate` will overwrite it.
 - `project.yml` includes `MACOSX_DEPLOYMENT_TARGET: "13.0"`, `SWIFT_VERSION: "5.9"`.
+- Debug build outputs to `macos/build/Debug/IINA Remote.app`
+- Release build outputs to `macos/build/Release/IINA Remote.app`
 - After building, copy the app to `/Applications` for daily use:
   ```bash
+  # Debug
   cp -r macos/build/Debug/IINA\ Remote.app /Applications/
+  # Release
+  cp -r macos/build/Release/IINA\ Remote.app /Applications/
   ```
 
 ## Android app specifics
