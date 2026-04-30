@@ -1,0 +1,3155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IINA Remote UI Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #1A73E8;
+    --primary-dark: #1557B0;
+    --success: #34A853;
+    --error: #EA4335;
+    --bg: #FFFFFF;
+    --surface: #F8F9FA;
+    --text: #202124;
+    --text-sec: #5F6368;
+    --divider: #DADCE0;
+    --track-bg: #E8EAED;
+    --selected-bg: rgba(26,115,232,0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Dev Nav ── */
+  .nav {
+    width: 200px;
+    background: #16162a;
+    padding: 24px 16px;
+    flex-shrink: 0;
+  }
+
+  .nav h2 {
+    color: #888;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #aaa;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    transition: all 0.15s;
+  }
+
+  .nav-item:hover { background: #1e1e3f; color: #fff; }
+  .nav-item.active { background: var(--primary); color: #fff; }
+
+  .nav-hint {
+    margin-top: 32px;
+    padding: 12px;
+    background: #1e1e3f;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.6;
+  }
+
+  .nav-hint div { color: #aaa; margin-bottom: 4px; }
+
+  /* ── Preview ── */
+  .preview {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    overflow: auto;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+
+  /* ── Screen ── */
+  .screen {
+    display: none;
+    height: 100%;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════════
+     S1: PAIRING — matches PairingScreen/PairingViewModel
+     Steps: Scanning → ServerList → EnteringCode → Submitting → Complete
+  ══════════════════════════════════════ */
+  .pairing-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    padding: 0 24px;
+    height: 100%;
+  }
+
+  /* Scanning state */
+  .pair-scan-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 40px;
+    padding-bottom: 32px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .pair-scan-section .top-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .pair-scan-spacer {
+    flex: 0;
+    min-height: 0;
+  }
+
+  .pair-scan-bottom {
+    width: 100%;
+  }
+
+  .pair-logo {
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .pair-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .pair-sub {
+    font-size: 13px;
+    color: var(--text-sec);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  .scan-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .scan-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .scan-status {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-bottom: 24px;
+  }
+
+  /* Server list */
+  .server-list {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .server-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .server-item:hover { background: var(--surface); border-color: var(--primary); }
+
+  .server-icon { font-size: 20px; flex-shrink: 0; }
+  .server-info { flex: 1; }
+  .server-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .server-ip { font-size: 12px; color: var(--text-sec); }
+  .server-last { font-size: 10px; color: var(--primary); background: var(--selected-bg); padding: 2px 6px; border-radius: 4px; }
+
+  .divider-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0 12px;
+    width: 100%;
+  }
+
+  .divider-text::before, .divider-text::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+
+  .divider-text span {
+    font-size: 12px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+  }
+
+  /* Manual input */
+  .manual-input-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .manual-input {
+    flex: 1;
+    height: 44px;
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .manual-input:focus { border-color: var(--primary); }
+
+  .manual-port {
+    width: 80px;
+  }
+
+  .manual-connect-btn {
+    height: 44px;
+    padding: 0 20px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .manual-connect-btn:hover { background: var(--primary-dark); }
+
+  /* Code entry step */
+  .code-entry-section {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 48px;
+    width: 100%;
+  }
+
+  .code-entry-section.active { display: flex; }
+
+  .code-expire {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-bottom: 24px;
+  }
+
+  .code-input {
+    width: 240px;
+    height: 56px;
+    background: var(--surface);
+    border: 2px solid var(--divider);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--text);
+    outline: none;
+    text-transform: uppercase;
+    transition: border-color 0.2s;
+  }
+
+  .code-input:focus { border-color: var(--primary); background: #EEF3FE; }
+
+  .code-hint {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-top: 8px;
+    margin-bottom: 24px;
+  }
+
+  .pair-submit-btn {
+    width: 240px;
+    height: 48px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 12px;
+  }
+
+  .pair-submit-btn:hover { background: var(--primary-dark); }
+  .pair-submit-btn:disabled { background: var(--track-bg); color: var(--text-sec); cursor: default; }
+
+  /* QR Scan Button */
+  .qr-scan-btn {
+    width: 100%;
+    height: 56px;
+    background: var(--primary);
+    border: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 12px;
+  }
+
+  .qr-scan-btn:hover { background: var(--primary-dark); }
+
+  .qr-scan-icon { font-size: 20px; }
+
+  .pair-cancel {
+    font-size: 13px;
+    color: var(--text-sec);
+    cursor: pointer;
+    padding: 8px;
+  }
+
+  .pair-cancel:hover { color: var(--primary); }
+
+  /* Device name input row */
+  .device-name-input-row {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .device-name-input-field {
+    width: 100%;
+    height: 44px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .device-name-input-field:focus {
+    border-color: var(--primary);
+  }
+
+  .device-name-input-field::placeholder {
+    color: var(--text-sec);
+  }
+
+  /* Last connection section */
+  .last-connection-section {
+    width: 100%;
+  }
+
+  .last-connection-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sec);
+    margin-bottom: 8px;
+  }
+
+  .last-connection-connect {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .more-paired-btn {
+    width: 100%;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 13px;
+    color: var(--primary);
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  .more-arrow {
+    font-size: 16px;
+    margin-left: 4px;
+  }
+
+  /* Paired Devices Bottom Sheet */
+  .paired-bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    z-index: 1001;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .paired-bottom-sheet.show {
+    transform: translateY(0);
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    margin: 12px auto;
+    flex-shrink: 0;
+  }
+
+  .paired-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 16px;
+    border-bottom: 0.5px solid var(--divider);
+    flex-shrink: 0;
+  }
+
+  .paired-sheet-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .paired-sheet-close {
+    font-size: 24px;
+    color: var(--text-sec);
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .paired-sheet-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  .paired-sheet-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .paired-sheet-item:hover {
+    border-color: var(--primary);
+  }
+
+  .paired-sheet-icon {
+    font-size: 24px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .paired-sheet-info {
+    flex: 1;
+  }
+
+  .paired-sheet-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .paired-sheet-host {
+    font-size: 12px;
+    color: var(--text-sec);
+  }
+
+  .paired-sheet-connect {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Device name input */
+  .device-name-section {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .device-name-section label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-bottom: 6px;
+  }
+
+  .device-name-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .device-name-input:focus { border-color: var(--primary); }
+
+  /* Error state */
+  .pair-error {
+    font-size: 12px;
+    color: var(--error);
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .pair-error.show { display: block; }
+
+  /* ══════════════════════════════════════
+     MAIN SCREEN — matches MainScreen.kt exactly
+     Order: conn-bar, volume, playlist, speed, extra-controls, now-playing, seek, controls, tab-bar
+  ══════════════════════════════════════ */
+  .main-screen {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Connection bar */
+  .conn-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 0.5px solid var(--divider);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .conn-host {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .conn-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .conn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    color: var(--text-sec);
+    font-size: 18px;
+    transition: background 0.15s;
+  }
+
+  .conn-icon:hover { background: var(--surface); }
+
+  /* Volume row — matches MainScreen VolumeRow */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 16px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .vol-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 16px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+  }
+
+  .vol-icon:hover { background: var(--surface); }
+
+  .vol-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .vol-label {
+    font-size: 12px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+    width: 60px;
+    text-align: right;
+  }
+
+  /* Playlist panel — matches MainScreen PlaylistPanel */
+  .playlist-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom: 0.5px solid var(--divider);
+    min-height: 0;
+  }
+
+  .playlist-panel-header {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--divider);
+  }
+
+  .playlist-panel-header:hover { background: #EEF0F4; }
+
+  .playlist-panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .playlist-toggle-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+  }
+
+  .playlist-items {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 160px;
+  }
+
+  .playlist-panel.collapsed .playlist-items { display: none; }
+
+  .pl-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 0.5px solid var(--divider);
+  }
+
+  .pl-item:hover { background: var(--surface); }
+  .pl-item.active { background: var(--selected-bg); }
+
+  .pl-index {
+    font-size: 12px;
+    color: var(--text-sec);
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .pl-item.active .pl-index { color: var(--primary); }
+
+  .pl-name {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pl-item.active .pl-name { color: var(--primary); font-weight: 500; }
+
+  .pl-duration {
+    font-size: 11px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+  }
+
+  /* ── Bottom Controls ── */
+  .bottom-controls {
+    flex-shrink: 0;
+    padding: 6px 16px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Speed section — matches IINA speed UI */
+  /* Extra controls row — matches MainScreen ExtraControlsRow */
+  .extra-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .extra-btn {
+    flex: 1;
+    height: 36px;
+    background: var(--surface);
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .extra-btn:hover { background: var(--selected-bg); }
+
+  /* Video Control Sheet styles */
+  .vc-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .vc-tab-btn {
+    flex: 1;
+    height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-sec);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .vc-tab-btn:hover { background: var(--selected-bg); }
+
+  .vc-tab-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  .vc-content {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .vc-panel {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* Speed Sheet styles */
+  .speed-display {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .speed-display-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .speed-slider-wrap {
+    padding: 0 16px;
+  }
+
+  .speed-slider-track {
+    position: relative;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    margin: 20px 0 8px;
+  }
+
+  .speed-slider-track-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--primary);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .speed-slider {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 24px;
+    -webkit-appearance: none;
+    background: transparent;
+    outline: none;
+    z-index: 1;
+  }
+
+  .speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  .speed-tick-row {
+    position: relative;
+    height: 16px;
+  }
+
+  .speed-tick {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-sec);
+    transform: translateX(-50%);
+  }
+
+  .speed-tick:first-child {
+    transform: translateX(0);
+  }
+
+  .speed-tick:last-child {
+    transform: translateX(-100%);
+  }
+
+  .speed-tick-line {
+    width: 1px;
+    height: 6px;
+    background: var(--divider);
+    margin-bottom: 2px;
+  }
+
+  .speed-tick-label {
+    white-space: nowrap;
+  }
+
+  .speed-btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 0 8px;
+  }
+
+  .speed-btn {
+    flex: 1;
+    height: 44px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+
+  .speed-btn:hover {
+    background: var(--selected-bg);
+    border-color: var(--primary);
+  }
+
+  /* Now playing — matches MainScreen NowPlayingRow */
+  .now-playing-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .np-label {
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .np-label.playing { color: var(--success); }
+
+  .np-time {
+    font-size: 12px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  /* Seek bar — matches MainScreen SeekBarRow */
+  .seek-section {
+    padding: 4px 0;
+  }
+
+  .seek-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .seek-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  /* Main controls — matches MainScreen ControlRow */
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 8px 0;
+    gap: 0;
+  }
+
+  .ctrl-skip {
+    width: 48px;
+    height: 48px;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-sec);
+    font-size: 10px;
+    gap: 2px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+
+  .ctrl-skip:hover { background: var(--surface); }
+  .ctrl-skip-icon { font-size: 18px; }
+
+  .ctrl-seek {
+    width: 48px;
+    height: 48px;
+    background: var(--surface);
+    border: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .ctrl-seek:hover { background: var(--selected-bg); }
+
+  .play-btn {
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    border-radius: 50%;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(26,115,232,0.35);
+    transition: transform 0.1s, background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .play-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
+  .play-btn:active { transform: scale(0.95); }
+
+  /* ── Tab Bar — matches BottomTabBar.kt ── */
+  .tab-bar {
+    height: 64px;
+    background: var(--bg);
+    border-top: 0.5px solid var(--divider);
+    display: flex;
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--text-sec);
+    font-size: 10px;
+    transition: color 0.15s;
+    position: relative;
+  }
+
+  .tab-item.active { color: var(--primary); }
+
+  .tab-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 0 0 2px 2px;
+  }
+
+  .tab-icon { font-size: 20px; }
+
+  /* ══════════════════════════════════════
+     S3: SUBTITLE / AUDIO TRACKS — matches SubAudioScreen.kt
+     Top bar with back button, segmented tabs, track list, delay controls
+  ══════════════════════════════════════ */
+  .sub-screen {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .sub-topbar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    border-bottom: 0.5px solid var(--divider);
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 20px;
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    border-radius: 8px;
+  }
+
+  .back-btn:hover { background: var(--surface); }
+
+  .sub-topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .sub-tabs {
+    display: flex;
+    height: 44px;
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--divider);
+    flex-shrink: 0;
+  }
+
+  .sub-tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-sec);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s;
+  }
+
+  .sub-tab-btn.active { color: var(--primary); }
+  .sub-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary);
+  }
+
+  .tab-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .tab-panel > .track-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .tab-panel > .delay-section,
+  .tab-panel > .zoom-section {
+    flex-shrink: 0;
+  }
+
+  .track-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .track-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 0.5px solid var(--divider);
+  }
+
+  .track-item:hover { background: var(--surface); }
+  .track-item.selected { background: var(--selected-bg); }
+
+  .track-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: transparent;
+    flex-shrink: 0;
+  }
+
+  .track-item.selected .track-dot { background: var(--primary); }
+
+  .track-info { flex: 1; min-width: 0; }
+
+  .track-label {
+    font-size: 14px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .track-item.selected .track-label { color: var(--primary); font-weight: 500; }
+
+  .track-off-tag {
+    font-size: 10px;
+    background: var(--surface);
+    color: var(--text-sec);
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Delay controls — matches SubAudioScreen DelayControlRow */
+  .delay-section {
+    padding: 12px 16px;
+    border-top: 0.5px solid var(--divider);
+    flex-shrink: 0;
+  }
+
+  .delay-label {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-bottom: 8px;
+  }
+
+  .delay-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .delay-btn {
+    flex: 1;
+    height: 36px;
+    background: var(--surface);
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .delay-btn:hover { background: var(--selected-bg); }
+
+  /* Zoom controls — subtitle zoom slider with step buttons */
+  .zoom-section {
+    padding: 12px 16px;
+    border-top: 0.5px solid var(--divider);
+    flex-shrink: 0;
+  }
+
+  .zoom-label {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-bottom: 8px;
+  }
+
+  .zoom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zoom-step-btn {
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .zoom-step-btn:hover { background: var(--selected-bg); }
+
+  .zoom-slider-wrapper {
+    flex: 1;
+    position: relative;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .zoom-tick-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 7px;
+    height: 16px;
+  }
+
+  .zoom-tick-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 16px;
+  }
+
+  .zoom-tick-line {
+    width: 2px;
+    height: 4px;
+    background: var(--text-sec);
+    border-radius: 1px;
+  }
+
+  .zoom-tick-text {
+    font-size: 10px;
+    color: var(--text-sec);
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  .zoom-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--track-bg);
+    border-radius: 2px;
+    outline: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+
+  .zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .zoom-value {
+    width: 40px;
+    font-size: 12px;
+    color: var(--text-sec);
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════
+     S4: FILE BROWSER — matches BrowseScreen.kt
+     Top bar with back + "打开" button, breadcrumb, folders then files, selection state
+  ══════════════════════════════════════ */
+  .browse-screen {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .browse-topbar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    border-bottom: 0.5px solid var(--divider);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .browse-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .browse-open-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .browse-open-btn:hover { background: var(--primary-dark); }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    height: 36px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    color: var(--text-sec);
+    gap: 4px;
+    border-bottom: 0.5px solid var(--divider);
+    flex-shrink: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .crumb { cursor: pointer; }
+  .crumb:hover { color: var(--primary); }
+  .crumb-sep { color: var(--divider); }
+  .crumb-current { color: var(--primary); font-weight: 600; }
+
+  /* File/folder list */
+  .browse-list { flex: 1; overflow-y: auto; min-height: 0; }
+
+  .browse-section-label {
+    padding: 8px 16px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sec);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+  }
+
+  .browse-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 0.5px solid var(--divider);
+  }
+
+  .browse-entry:hover { background: var(--surface); }
+  .browse-entry.selected { background: var(--selected-bg); }
+
+  .entry-icon {
+    font-size: 20px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .entry-info { flex: 1; min-width: 0; }
+
+  .entry-name {
+    font-size: 14px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .entry-name.dir { color: var(--primary); }
+
+  .entry-meta {
+    font-size: 11px;
+    color: var(--text-sec);
+    margin-top: 2px;
+  }
+
+  .entry-arrow {
+    font-size: 14px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════
+     BOTTOM SHEETS — matches ModalBottomSheet pattern
+  ══════════════════════════════════════ */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99;
+  }
+
+  .overlay.show { display: block; }
+
+  .sheet {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 390px;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 0 20px 32px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    max-height: 70%;
+    overflow-y: auto;
+  }
+
+  .sheet.show {
+    display: block;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--divider);
+    border-radius: 2px;
+    margin: 12px auto 16px;
+  }
+
+  .sheet-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .sheet-option {
+    padding: 14px 0;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--divider);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background 0.15s;
+  }
+
+  .sheet-option:last-child { border-bottom: none; }
+  .sheet-option:hover { background: var(--surface); margin: 0 -20px; padding: 14px 20px; }
+  .sheet-option.active { color: var(--primary); font-weight: 500; }
+
+  .sheet-option-check {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--primary);
+  }
+
+  /* Chapter sheet */
+  .chapter-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--divider);
+    transition: background 0.15s;
+  }
+
+  .chapter-item:hover { background: var(--surface); margin: 0 -20px; padding: 12px 20px; }
+
+  .chapter-title {
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chapter-time {
+    font-size: 12px;
+    color: var(--text-sec);
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  /* AB Loop sheet */
+  .ab-status-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .ab-chip {
+    flex: 1;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .ab-chip-a { background: rgba(26,115,232,0.12); }
+  .ab-chip-b { background: rgba(52,168,83,0.12); }
+
+  .ab-chip-label {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .ab-chip-a .ab-chip-label { color: var(--primary); }
+  .ab-chip-b .ab-chip-label { color: var(--success); }
+
+  .ab-chip-time {
+    font-size: 12px;
+    color: var(--text-sec);
+    margin-top: 2px;
+  }
+
+  .ab-btn-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .ab-btn {
+    flex: 1;
+    height: 52px;
+    background: var(--surface);
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ab-btn:hover { background: var(--selected-bg); }
+  .ab-btn.set-a { background: var(--primary); color: #fff; }
+  .ab-btn.set-b { background: var(--success); color: #fff; }
+
+  /* Menu sheet */
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 0.5px solid var(--divider);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .menu-item:hover { background: var(--surface); margin: 0 -20px; padding: 14px 20px; }
+  .menu-item:last-child { border-bottom: none; }
+
+  .menu-icon { font-size: 18px; width: 24px; text-align: center; }
+  .menu-text { font-size: 14px; color: var(--text); flex: 1; }
+  .menu-text.danger { color: var(--error); }
+
+  /* Settings sheet */
+  .settings-group {
+    padding: 0 0 12px;
+    border-bottom: 0.5px solid var(--divider);
+    margin-bottom: 12px;
+  }
+
+  .settings-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .settings-row-label { font-size: 14px; color: var(--text); }
+  .settings-row-value { font-size: 13px; color: var(--text-sec); }
+
+  .settings-row-input {
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    color: var(--text-sec);
+    text-align: right;
+    outline: none;
+    width: 140px;
+  }
+
+  .settings-row-input:focus {
+    border-color: var(--primary);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 88px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Loading Dialog */
+  .loading-dialog {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 150;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-dialog.show {
+    display: flex;
+  }
+
+  .loading-card {
+    width: 280px;
+    height: 200px;
+    background: var(--bg);
+    border-radius: 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    animation: loadingFadeIn 0.2s ease-out;
+  }
+
+  @keyframes loadingFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--divider);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 16px;
+    color: var(--text);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- DEV NAV -->
+<nav class="nav">
+  <h2>IINA Remote</h2>
+  <div class="nav-item active" onclick="navTo('pairing', this)">
+    <span>🔐</span> <span data-i18n="nav_pairing">配对</span>
+  </div>
+  <div class="nav-item" onclick="navTo('main', this)">
+    <span>▶️</span> <span data-i18n="nav_main">主控</span>
+  </div>
+  <div class="nav-item" onclick="navTo('sub', this)">
+    <span>🎵</span> <span data-i18n="nav_sub_audio">字幕/音轨</span>
+  </div>
+  <div class="nav-item" onclick="navTo('browse', this)">
+    <span>📁</span> <span data-i18n="nav_browse">文件浏览</span>
+  </div>
+
+  <div class="nav-hint">
+    <div>💡 对齐 Kotlin 源码</div>
+    配对: 设备名称 + 二维码扫描 → 6位验证码 → challenge验证<br>
+    已配对设备: 列表展示 → challenge重连<br>
+    主控: 音量 → 播放列表 → 速度 → 章节/比例/A-B → 进度 → 控制<br>
+    字幕/音轨: 分段Tab + 延迟调节<br>
+    文件: 文件夹/文件分区 + 选中 → 打开
+  </div>
+</nav>
+
+<!-- PREVIEW -->
+<div class="preview">
+  <div class="phone">
+
+    <!-- ════ S1: PAIRING ════ -->
+    <div class="screen active" id="screen-pairing">
+      <div class="pairing-screen">
+
+        <!-- Step 1: QR Scan with device name -->
+        <div class="pair-scan-section" id="pair-scan">
+          <div class="top-content">
+            <div class="pair-logo">▶</div>
+            <div class="pair-title">IINA Remote</div>
+            <div class="pair-sub" data-i18n="pairing_hint">确保 Mac 和手机在同一网络下<br>且 IINA Remote 服务已启动</div>
+          </div>
+
+          <div class="pair-scan-spacer"></div>
+
+          <div class="pair-scan-bottom">
+            <!-- Device name input -->
+            <div class="device-name-input-row">
+              <input class="device-name-input-field" id="device-name-input" placeholder="设备名称（如：我的手机）" value="小米手机" data-i18n="device_name_hint">
+            </div>
+
+            <!-- QR Scan Button -->
+            <button class="qr-scan-btn" id="qr-scan-btn" onclick="showCodeEntry('192.168.1.105', 8765)">
+              <span class="qr-scan-icon">▦</span>
+              <span data-i18n="scan_qr_to_pair">扫描二维码配对</span>
+            </button>
+
+            <!-- Divider with "或" - shown only when paired devices exist -->
+            <div class="divider-text" id="paired-divider"><span data-i18n="or">或</span></div>
+
+            <!-- Last connection section - shown only when paired devices exist -->
+            <div class="last-connection-section" id="last-connection-section">
+              <div class="last-connection-label" data-i18n="last_connection">上次连接</div>
+              <div class="server-list" id="server-list">
+                <div class="server-item" onclick="connectToPairedDevice('192.168.1.105', 8765)">
+                  <span class="server-icon">🖥</span>
+                  <div class="server-info">
+                    <div class="server-name">MacBook Pro</div>
+                    <div class="server-ip">192.168.1.105:8765</div>
+                  </div>
+                  <button class="last-connection-connect" data-i18n="connect">连接</button>
+                </div>
+              </div>
+
+              <!-- More paired devices button - shown only when 2+ paired devices -->
+              <div class="more-paired-btn" id="more-paired-btn" onclick="openPairedDevicesSheet()" data-i18n="more_paired_devices">更多已配对设备</div>
+              <span class="more-arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Code Entry (PairingStep.EnteringCode) -->
+        <div class="code-entry-section" id="pair-code">
+          <div class="pair-logo">▶</div>
+          <div class="pair-title" data-i18n="enter_pairing_code">输入配对码</div>
+          <div class="pair-sub" data-i18n="view_code_on_mac">在 Mac 上查看显示的配对码</div>
+
+          <div class="code-expire" id="code-expire" data-i18n="code_expires">验证码有效时间: 5:00</div>
+
+          <input class="code-input" id="code-input" maxlength="6"
+                 placeholder="A1B2C3"
+                 oninput="onCodeInput(this)"
+                 onkeydown="onCodeKey(this, event)">
+
+          <div class="code-hint" data-i18n="code_format_hint">6 位字母或数字</div>
+
+          <div class="pair-error" id="pair-error" data-i18n="pairing_code_invalid">配对码无效，请重新连接</div>
+
+          <button class="pair-submit-btn" id="pair-submit-btn" onclick="submitPairing()" disabled data-i18n="submit_pairing">提交配对</button>
+          <div class="pair-cancel" onclick="cancelPairing()" data-i18n="cancel">取消</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════ S2: MAIN ════ -->
+    <div class="screen" id="screen-main">
+      <div class="main-screen">
+
+        <!-- Connection bar (matches ConnectionBarTop) -->
+        <div class="conn-bar">
+          <div class="conn-host" id="conn-host">192.168.1.105</div>
+          <span class="conn-dot"></span>
+          <div class="conn-icon" onclick="openMenu()">☰</div>
+          <div class="conn-icon" onclick="openSettings()">⚙</div>
+        </div>
+
+        <!-- System Volume row (NEW - system volume) -->
+        <div class="volume-row">
+          <div class="vol-icon" id="system-vol-icon" onclick="toggleSystemMute()">🔊</div>
+          <input type="range" class="vol-slider" id="system-vol-slider" min="0" max="100" step="1" value="70" oninput="setSystemVolume(this.value)">
+          <span class="vol-label" data-i18n="system_volume">系统音量</span>
+        </div>
+
+        <!-- IINA Volume row (matches VolumeRow) -->
+        <div class="volume-row">
+          <div class="vol-icon" id="vol-icon" onclick="toggleMute()">🎚️</div>
+          <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" step="1" value="80" oninput="setVolume(this.value)">
+          <span class="vol-label" data-i18n="iina_volume">IINA 音量</span>
+        </div>
+
+        <!-- Collapsible Playlist Panel (matches PlaylistPanel) -->
+          <div class="playlist-panel" id="playlist-panel">
+            <div class="playlist-panel-header" onclick="togglePlaylist()">
+              <span class="playlist-panel-title" data-i18n="playlist">▶ 播放列表</span>
+            </div>
+          <div class="playlist-items" id="playlist-items">
+            <div class="pl-item active" onclick="jumpToItem(0, this)">
+              <span class="pl-index">▶</span>
+              <span class="pl-name">Movie.mkv</span>
+              <span class="pl-duration">1:00:00</span>
+            </div>
+            <div class="pl-item" onclick="jumpToItem(1, this)">
+              <span class="pl-index">第2集</span>
+              <span class="pl-name">S02E01 - 开端.mkv</span>
+              <span class="pl-duration">0:45:30</span>
+            </div>
+            <div class="pl-item" onclick="jumpToItem(2, this)">
+              <span class="pl-index">第3集</span>
+              <span class="pl-name">S02E02 - 循环.mkv</span>
+              <span class="pl-duration">0:44:15</span>
+            </div>
+            <div class="pl-item" onclick="jumpToItem(3, this)">
+              <span class="pl-index">第4集</span>
+              <span class="pl-name">S02E03 - 重启.mkv</span>
+              <span class="pl-duration">0:46:00</span>
+            </div>
+            <div class="pl-item" onclick="jumpToItem(4, this)">
+              <span class="pl-index">第5集</span>
+              <span class="pl-name">S02E04 - 真相.mkv</span>
+              <span class="pl-duration">0:43:45</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom controls (matches bottom-controls section in MainScreen) -->
+        <div class="bottom-controls">
+
+          <!-- Extra controls row (视频控制 + 全屏) -->
+          <div class="extra-row">
+            <div class="extra-btn" onclick="openVideoControlSheet()" data-i18n="video_controls">视频控制</div>
+            <div class="extra-btn" onclick="toggleFullscreen()" data-i18n="fullscreen">全屏</div>
+          </div>
+
+          <!-- Now playing (matches NowPlayingRow) -->
+          <div class="now-playing-row">
+            <div class="np-label playing" id="np-label">▶ Movie.mkv</div>
+            <div class="np-time" id="np-time">0:02:05</div>
+          </div>
+
+          <!-- Seek bar (matches SeekBarRow) -->
+          <div class="seek-section">
+            <input type="range" class="seek-slider" id="seek-slider" min="0" max="100" value="3" oninput="seekTo(this.value)">
+          </div>
+
+          <!-- Control row (matches ControlRow: ⏮, ⏪10s, ▶/⏸, 10s⏩, ⏭) -->
+          <div class="controls-row">
+            <button class="ctrl-skip" onclick="skipTrack(-1)">
+              <span class="ctrl-skip-icon">⏮</span>
+            </button>
+            <button class="ctrl-seek" onclick="skip(-10)">⏪10s</button>
+            <button class="play-btn" id="play-btn" onclick="togglePlay()">⏸</button>
+            <button class="ctrl-seek" onclick="skip(10)">10s⏩</button>
+            <button class="ctrl-skip" onclick="skipTrack(1)">
+              <span class="ctrl-skip-icon">⏭</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Bar (matches BottomTabBar: 文件, 播放, 字幕/音轨) -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('browse', this)">
+            <span class="tab-icon">📁</span>
+            <span data-i18n="tab_browse">文件</span>
+          </div>
+          <div class="tab-item active" onclick="switchTab('main', this)">
+            <span class="tab-icon">▶</span>
+            <span data-i18n="tab_play">播放</span>
+          </div>
+          <div class="tab-item" onclick="switchTab('sub', this)">
+            <span class="tab-icon">🎵</span>
+            <span data-i18n="tab_sub_audio">字幕/音轨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ S3: SUBTITLE / AUDIO ════ -->
+    <div class="screen" id="screen-sub">
+      <div class="sub-screen">
+        <div class="sub-topbar">
+          <button class="back-btn" onclick="switchTab('main')">←</button>
+          <span class="sub-topbar-title" data-i18n="subtitle_audio">字幕 / 音轨</span>
+        </div>
+
+        <div class="sub-tabs">
+          <button class="sub-tab-btn active" onclick="showSubTab(0, this)" data-i18n="subtitle">字幕</button>
+          <button class="sub-tab-btn" onclick="showSubTab(1, this)" data-i18n="audio_track">音轨</button>
+        </div>
+
+        <div class="tab-panel" id="subtitle-panel">
+          <div class="track-list" id="subtitle-list">
+            <div class="track-item selected" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label">hdmv_pgs_subtitle</div>
+              </div>
+            </div>
+            <div class="track-item" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label">Michiko and Hatchin - 14.ass</div>
+              </div>
+            </div>
+            <div class="track-item" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label" data-i18n="off">关闭</div>
+              </div>
+              <span class="track-off-tag" data-i18n="off">关闭</span>
+            </div>
+          </div>
+
+          <!-- Delay controls (matches DelayControlRow) -->
+          <div class="delay-section" id="delay-sub">
+            <div class="delay-label" data-i18n="subtitle_delay">字幕延迟</div>
+            <div class="delay-row">
+              <button class="delay-btn" onclick="adjustDelay(-500)">-0.5s</button>
+              <button class="delay-btn" onclick="adjustDelay(-100)">-0.1s</button>
+              <button class="delay-btn" onclick="adjustDelay(100)">+0.1s</button>
+              <button class="delay-btn" onclick="adjustDelay(500)">+0.5s</button>
+            </div>
+          </div>
+
+          <!-- Subtitle Zoom controls -->
+          <div class="zoom-section" id="zoom-sub">
+            <div class="zoom-label" data-i18n="subtitle_scale">字幕缩放</div>
+            <div class="zoom-row">
+              <button class="zoom-step-btn" onclick="adjustSubtitleZoom(-1)">−</button>
+              <div class="zoom-slider-wrapper">
+                <div class="zoom-tick-row" id="zoom-tick-container"></div>
+                <input type="range" class="zoom-slider" id="zoom-slider" min="-10" max="20" step="1" value="0" oninput="setSubtitleZoom(this.value)">
+              </div>
+              <button class="zoom-step-btn" onclick="adjustSubtitleZoom(1)">+</button>
+              <span class="zoom-value" id="zoom-value">x1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="audio-panel" style="display:none;">
+          <div class="track-list" id="audio-list">
+            <div class="track-item" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label">English aac, 2ch, 48kHz</div>
+              </div>
+            </div>
+            <div class="track-item selected" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label">Japanese aac, 2ch, 48kHz</div>
+              </div>
+            </div>
+            <div class="track-item" onclick="selectTrack(this)">
+              <div class="track-dot"></div>
+              <div class="track-info">
+                <div class="track-label">Commentary aac, 2ch, 48kHz</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="delay-section" id="delay-audio">
+            <div class="delay-label" data-i18n="audio_delay">音轨延迟</div>
+            <div class="delay-row">
+              <button class="delay-btn" onclick="adjustDelay(-500)">-0.5s</button>
+              <button class="delay-btn" onclick="adjustDelay(-100)">-0.1s</button>
+              <button class="delay-btn" onclick="adjustDelay(100)">+0.1s</button>
+              <button class="delay-btn" onclick="adjustDelay(500)">+0.5s</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('browse', this)">
+            <span class="tab-icon">📁</span>
+            <span data-i18n="tab_browse">文件</span>
+          </div>
+          <div class="tab-item" onclick="switchTab('main', this)">
+            <span class="tab-icon">▶</span>
+            <span data-i18n="tab_play">播放</span>
+          </div>
+          <div class="tab-item active" onclick="switchTab('sub', this)">
+            <span class="tab-icon">🎵</span>
+            <span data-i18n="tab_sub_audio">字幕/音轨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ S4: FILE BROWSER ════ -->
+    <div class="screen" id="screen-browse">
+      <div class="browse-screen">
+
+        <div class="browse-topbar">
+          <button class="back-btn" onclick="switchTab('main')">←</button>
+          <div class="browse-title" data-i18n="file_browse">文件浏览</div>
+        </div>
+
+        <div class="breadcrumb">
+          <span class="crumb" onclick="breadcrumbTo(0)" data-i18n="root_directory">根目录</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb" onclick="breadcrumbTo(1)">Volumes</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-current">Video</span>
+        </div>
+
+        <div class="browse-list">
+          <div class="browse-section-label" data-i18n="folder">文件夹</div>
+
+          <div class="browse-entry" onclick="navigateFolder('Subtitles', this)">
+            <span class="entry-icon">📁</span>
+            <div class="entry-info">
+              <div class="entry-name dir">Subtitles</div>
+              <div class="entry-meta" data-i18n="folder">文件夹</div>
+            </div>
+            <span class="entry-arrow">›</span>
+          </div>
+
+          <div class="browse-entry" onclick="navigateFolder('Movies', this)">
+            <span class="entry-icon">📁</span>
+            <div class="entry-info">
+              <div class="entry-name dir">Movies</div>
+              <div class="entry-meta" data-i18n="folder">文件夹</div>
+            </div>
+            <span class="entry-arrow">›</span>
+          </div>
+
+          <div class="browse-section-label" data-i18n="file">文件</div>
+
+          <div class="browse-entry" onclick="openFile('Movie.mkv')">
+            <span class="entry-icon">🎬</span>
+            <div class="entry-info">
+              <div class="entry-name">Movie.mkv</div>
+              <div class="entry-meta">1.4 GB</div>
+            </div>
+          </div>
+
+          <div class="browse-entry" onclick="openFile('S02E01 - 开端.mkv')">
+            <span class="entry-icon">🎬</span>
+            <div class="entry-info">
+              <div class="entry-name">S02E01 - 开端.mkv</div>
+              <div class="entry-meta">800.0 MB</div>
+            </div>
+          </div>
+
+          <div class="browse-entry" onclick="openFile('S02E02 - 循环.mkv')">
+            <span class="entry-icon">🎬</span>
+            <div class="entry-info">
+              <div class="entry-name">S02E02 - 循环.mkv</div>
+              <div class="entry-meta">750.0 MB</div>
+            </div>
+          </div>
+
+          <div class="browse-entry" onclick="selectFile(this, 'cover.jpg')">
+            <span class="entry-icon">🖼</span>
+            <div class="entry-info">
+              <div class="entry-name">cover.jpg</div>
+              <div class="entry-meta">300 KB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item active" onclick="switchTab('browse', this)">
+            <span class="tab-icon">📁</span>
+            <span data-i18n="tab_browse">文件</span>
+          </div>
+          <div class="tab-item" onclick="switchTab('main', this)">
+            <span class="tab-icon">▶</span>
+            <span data-i18n="tab_play">播放</span>
+          </div>
+          <div class="tab-item" onclick="switchTab('sub', this)">
+            <span class="tab-icon">🎵</span>
+            <span data-i18n="tab_sub_audio">字幕/音轨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ BOTTOM SHEETS ════ -->
+<div class="overlay" id="overlay" onclick="closeAllSheets()"></div>
+
+<!-- Loading Dialog -->
+<div class="loading-dialog" id="loading-dialog">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" data-i18n="opening_file">启动播放中，请稍等</div>
+  </div>
+</div>
+
+<!-- Video Control Sheet (unified: 章节, 画面比例, A-B 循环, 播放速度) -->
+<div class="sheet" id="video-control-sheet">
+  <div class="sheet-handle"></div>
+  <div class="vc-tabs">
+    <button class="vc-tab-btn active" onclick="switchVcTab(0, this)" data-i18n="chapters">章节</button>
+    <button class="vc-tab-btn" onclick="switchVcTab(1, this)" data-i18n="aspect_ratio">画面比例</button>
+    <button class="vc-tab-btn" onclick="switchVcTab(2, this)" data-i18n="ab_loop">A-B 循环</button>
+    <button class="vc-tab-btn" onclick="switchVcTab(3, this)" data-i18n="playback_speed">播放速度</button>
+  </div>
+  <div class="vc-content">
+    <div class="vc-panel" id="vc-chapter">
+      <div class="chapter-item" onclick="seekToChapter(0)">
+        <span class="chapter-title" data-i18n="prologue">序章</span>
+        <span class="chapter-time">0:00</span>
+      </div>
+      <div class="chapter-item" onclick="seekToChapter(1)">
+        <span class="chapter-title" data-i18n="chapter_1">第一章 开端</span>
+        <span class="chapter-time">2:15</span>
+      </div>
+      <div class="chapter-item" onclick="seekToChapter(2)">
+        <span class="chapter-title" data-i18n="chapter_2">第二章 发展</span>
+        <span class="chapter-time">15:30</span>
+      </div>
+      <div class="chapter-item" onclick="seekToChapter(3)">
+        <span class="chapter-title" data-i18n="chapter_3">第三章 高潮</span>
+        <span class="chapter-time">35:00</span>
+      </div>
+      <div class="chapter-item" onclick="seekToChapter(4)">
+        <span class="chapter-title" data-i18n="chapter_4">第四章 尾声</span>
+        <span class="chapter-time">52:20</span>
+      </div>
+    </div>
+    <div class="vc-panel" id="vc-aspect" style="display:none;">
+      <div class="sheet-option" onclick="selectAspect(this, 'default')" data-i18n="default">默认 <span class="sheet-option-check">✓</span></div>
+      <div class="sheet-option" onclick="selectAspect(this, '4:3')">4:3</div>
+      <div class="sheet-option" onclick="selectAspect(this, '16:9')">16:9</div>
+      <div class="sheet-option" onclick="selectAspect(this, '16:10')">16:10</div>
+      <div class="sheet-option" onclick="selectAspect(this, '1:1')">1:1</div>
+      <div class="sheet-option" onclick="selectAspect(this, '3:2')">3:2</div>
+      <div class="sheet-option" onclick="selectAspect(this, '2.21:1')">2.21:1</div>
+      <div class="sheet-option" onclick="selectAspect(this, '2.35:1')">2.35:1</div>
+      <div class="sheet-option" onclick="selectAspect(this, '2.39:1')">2.39:1</div>
+    </div>
+    <div class="vc-panel" id="vc-abloop" style="display:none;">
+      <div class="ab-status-row">
+        <div class="ab-chip ab-chip-a">
+          <div class="ab-chip-label">A</div>
+          <div class="ab-chip-time" id="ab-a-time" data-i18n="not_set">未设置</div>
+        </div>
+        <div class="ab-chip ab-chip-b">
+          <div class="ab-chip-label">B</div>
+          <div class="ab-chip-time" id="ab-b-time" data-i18n="not_set">未设置</div>
+        </div>
+      </div>
+      <div class="ab-btn-row">
+        <button class="ab-btn" id="ab-set-a-btn" onclick="setABPoint('A')" data-i18n="set_a">设置 A</button>
+        <button class="ab-btn" id="ab-set-b-btn" onclick="setABPoint('B')" data-i18n="set_b">设置 B</button>
+        <button class="ab-btn" onclick="clearABLoop()" data-i18n="clear">清除</button>
+      </div>
+    </div>
+    <div class="vc-panel" id="vc-speed" style="display:none;">
+      <div class="speed-display">
+        <span class="speed-display-value" id="speed-display">x1.00</span>
+      </div>
+      <div class="speed-slider-wrap">
+        <div class="speed-slider-track">
+          <div class="speed-slider-track-fill" id="speed-fill"></div>
+          <input type="range" class="speed-slider" id="speed-slider" min="0" max="6" value="2"
+                 oninput="setSpeedFromSlider(this.value)">
+        </div>
+        <div class="speed-tick-row">
+          <div class="speed-tick" style="left: 0%"><div class="speed-tick-line"></div><span class="speed-tick-label">0.25x</span></div>
+          <div class="speed-tick" style="left: 16.6667%"><div class="speed-tick-line"></div><span class="speed-tick-label">0.5x</span></div>
+          <div class="speed-tick" style="left: 33.3333%"><div class="speed-tick-line"></div><span class="speed-tick-label">1x</span></div>
+          <div class="speed-tick" style="left: 50%"><div class="speed-tick-line"></div><span class="speed-tick-label">2x</span></div>
+          <div class="speed-tick" style="left: 66.6667%"><div class="speed-tick-line"></div><span class="speed-tick-label">4x</span></div>
+          <div class="speed-tick" style="left: 83.3333%"><div class="speed-tick-line"></div><span class="speed-tick-label">8x</span></div>
+          <div class="speed-tick" style="left: 100%"><div class="speed-tick-line"></div><span class="speed-tick-label">16x</span></div>
+        </div>
+      </div>
+      <div class="speed-btn-row">
+        <div class="speed-btn" onclick="applySpeedMultiplier(0.5)">x0.5</div>
+        <div class="speed-btn" onclick="resetSpeed()">↺</div>
+        <div class="speed-btn" onclick="applySpeedMultiplier(2)">x2</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chapter Sheet (matches ChapterSheet) -->
+<div class="sheet" id="chapter-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" data-i18n="chapters">章节</div>
+  <div class="chapter-item" onclick="seekToChapter(0)">
+    <span class="chapter-title" data-i18n="prologue">序章</span>
+    <span class="chapter-time">0:00</span>
+  </div>
+  <div class="chapter-item" onclick="seekToChapter(1)">
+    <span class="chapter-title" data-i18n="chapter_1">第一章 开端</span>
+    <span class="chapter-time">2:15</span>
+  </div>
+  <div class="chapter-item" onclick="seekToChapter(2)">
+    <span class="chapter-title" data-i18n="chapter_2">第二章 发展</span>
+    <span class="chapter-time">15:30</span>
+  </div>
+  <div class="chapter-item" onclick="seekToChapter(3)">
+    <span class="chapter-title" data-i18n="chapter_3">第三章 高潮</span>
+    <span class="chapter-time">35:00</span>
+  </div>
+  <div class="chapter-item" onclick="seekToChapter(4)">
+    <span class="chapter-title" data-i18n="chapter_4">第四章 尾声</span>
+    <span class="chapter-time">52:20</span>
+  </div>
+</div>
+
+<!-- AB Loop Sheet (matches ABLoopSheet) -->
+<div class="sheet" id="ab-loop-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" data-i18n="ab_loop">A-B 循环</div>
+  <div class="ab-status-row">
+    <div class="ab-chip ab-chip-a">
+      <div class="ab-chip-label">A</div>
+      <div class="ab-chip-time" id="ab-a-time" data-i18n="not_set">未设置</div>
+    </div>
+    <div class="ab-chip ab-chip-b">
+      <div class="ab-chip-label">B</div>
+      <div class="ab-chip-time" id="ab-b-time" data-i18n="not_set">未设置</div>
+    </div>
+  </div>
+  <div class="ab-btn-row">
+    <button class="ab-btn" id="ab-set-a-btn" onclick="setABPoint('A')" data-i18n="set_a">设置 A</button>
+    <button class="ab-btn" id="ab-set-b-btn" onclick="setABPoint('B')" data-i18n="set_b">设置 B</button>
+    <button class="ab-btn" onclick="clearABLoop()" data-i18n="clear">清除</button>
+  </div>
+</div>
+
+<!-- Aspect Sheet (matches AspectSheet) -->
+<div class="sheet" id="aspect-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" data-i18n="aspect_ratio">画面比例</div>
+  <div class="sheet-option active" onclick="selectAspect(this, 'default')" data-i18n="default">默认 <span class="sheet-option-check">✓</span></div>
+  <div class="sheet-option" onclick="selectAspect(this, '4:3')">4:3</div>
+  <div class="sheet-option" onclick="selectAspect(this, '16:9')">16:9</div>
+  <div class="sheet-option" onclick="selectAspect(this, '16:10')">16:10</div>
+  <div class="sheet-option" onclick="selectAspect(this, '1:1')">1:1</div>
+  <div class="sheet-option" onclick="selectAspect(this, '3:2')">3:2</div>
+  <div class="sheet-option" onclick="selectAspect(this, '2.21:1')">2.21:1</div>
+  <div class="sheet-option" onclick="selectAspect(this, '2.35:1')">2.35:1</div>
+  <div class="sheet-option" onclick="selectAspect(this, '2.39:1')">2.39:1</div>
+</div>
+
+<!-- Speed Sheet (matches SpeedSheet) -->
+<div class="sheet speed-sheet" id="speed-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" data-i18n="playback_speed">播放速度</div>
+  <div class="speed-display">
+    <span class="speed-display-value" id="speed-display">x1.00</span>
+  </div>
+  <div class="speed-slider-wrap">
+    <div class="speed-slider-track">
+      <div class="speed-slider-track-fill" id="speed-fill"></div>
+      <input type="range" class="speed-slider" id="speed-slider" min="0" max="6" value="2"
+             oninput="setSpeedFromSlider(this.value)">
+    </div>
+    <div class="speed-tick-row">
+      <div class="speed-tick" style="left: 0%"><div class="speed-tick-line"></div><span class="speed-tick-label">0.25x</span></div>
+      <div class="speed-tick" style="left: 16.6667%"><div class="speed-tick-line"></div><span class="speed-tick-label">0.5x</span></div>
+      <div class="speed-tick" style="left: 33.3333%"><div class="speed-tick-line"></div><span class="speed-tick-label">1x</span></div>
+      <div class="speed-tick" style="left: 50%"><div class="speed-tick-line"></div><span class="speed-tick-label">2x</span></div>
+      <div class="speed-tick" style="left: 66.6667%"><div class="speed-tick-line"></div><span class="speed-tick-label">4x</span></div>
+      <div class="speed-tick" style="left: 83.3333%"><div class="speed-tick-line"></div><span class="speed-tick-label">8x</span></div>
+      <div class="speed-tick" style="left: 100%"><div class="speed-tick-line"></div><span class="speed-tick-label">16x</span></div>
+    </div>
+  </div>
+  <div class="speed-btn-row">
+    <div class="speed-btn" onclick="applySpeedMultiplier(0.5)">x0.5</div>
+    <div class="speed-btn" onclick="resetSpeed()">↺</div>
+    <div class="speed-btn" onclick="applySpeedMultiplier(2)">x2</div>
+  </div>
+</div>
+
+<!-- Menu Sheet (matches MenuSheet) -->
+<div class="sheet" id="menu-sheet">
+  <div class="sheet-handle"></div>
+  <div class="menu-item" onclick="showToast('关于'); closeAllSheets()">
+    <span class="menu-icon">ℹ️</span>
+    <span class="menu-text" data-i18n="about">关于</span>
+  </div>
+  <div class="menu-item" onclick="showToast('帮助'); closeAllSheets()">
+    <span class="menu-icon">❓</span>
+    <span class="menu-text" data-i18n="help">帮助</span>
+  </div>
+  <div class="menu-item" onclick="handleDisconnect()">
+    <span class="menu-icon">🔌</span>
+    <span class="menu-text danger" data-i18n="disconnect">断开连接</span>
+  </div>
+</div>
+
+<!-- Settings Sheet (matches SettingsSheet) -->
+<div class="sheet" id="settings-sheet">
+  <div class="sheet-handle"></div>
+  <div class="settings-group">
+    <div class="settings-group-title" data-i18n="playback">播放</div>
+    <div class="settings-row">
+      <span class="settings-row-label" data-i18n="default_playback_speed">默认播放速度</span>
+      <span class="settings-row-value">1.0x</span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-row-label" data-i18n="remember_position">记住播放位置</span>
+      <span class="settings-row-value" data-i18n="on">开启</span>
+    </div>
+  </div>
+  <div class="settings-group">
+    <div class="settings-group-title" data-i18n="connection">连接</div>
+    <div class="settings-row">
+      <span class="settings-row-label" data-i18n="auto_reconnect">自动重连</span>
+      <span class="settings-row-value" data-i18n="on">开启</span>
+    </div>
+    <div class="settings-row settings-row-editable">
+      <span class="settings-row-label" data-i18n="server_name">服务端名称</span>
+      <input class="settings-row-input" id="server-name-input" value="MacBook Pro" onclick="editServerName()">
+    </div>
+  </div>
+  <div class="settings-group">
+    <div class="settings-group-title" data-i18n="interface">界面</div>
+    <div class="settings-row">
+      <span class="settings-row-label" data-i18n="dark_mode">深色模式</span>
+      <span class="settings-row-value" data-i18n="follow_system">跟随系统</span>
+    </div>
+  </div>
+</div>
+
+<!-- Paired Devices Bottom Sheet -->
+<div class="paired-bottom-sheet" id="paired-bottom-sheet">
+  <div class="sheet-handle"></div>
+  <div class="paired-sheet-header">
+    <div class="paired-sheet-title" data-i18n="paired_devices">已配对设备</div>
+    <div class="paired-sheet-close" onclick="closePairedDevicesSheet()">✕</div>
+  </div>
+  <div class="paired-sheet-list">
+    <div class="paired-sheet-item" onclick="connectToPairedDevice('192.168.1.105', 8765)">
+      <span class="paired-sheet-icon">🖥</span>
+      <div class="paired-sheet-info">
+        <div class="paired-sheet-name">MacBook Pro</div>
+        <div class="paired-sheet-host">192.168.1.105:8765</div>
+      </div>
+      <button class="paired-sheet-connect" data-i18n="connect">连接</button>
+    </div>
+    <div class="paired-sheet-item" onclick="connectToPairedDevice('192.168.1.110', 8765)">
+      <span class="paired-sheet-icon">🖥</span>
+      <div class="paired-sheet-info">
+        <div class="paired-sheet-name">MacBook Air</div>
+        <div class="paired-sheet-host">192.168.1.110:8765</div>
+      </div>
+      <button class="paired-sheet-connect" data-i18n="connect">连接</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── State ──
+  let isPlaying = true;
+  let currentSpeed = 1.0;
+  let volume = 70;
+  let systemVolume = 70;
+  let isMuted = false;
+  let isFullscreen = false;
+  let currentItem = 0;
+  let progress = 3;
+  let duration = 3600; // 1 hour
+  let selectedFileName = null;
+  let abA = null, abB = null;
+  let currentDelay = 0;
+
+  // ── Navigation ──
+  const tabOrder = ['browse', 'main', 'sub'];
+
+  function navTo(name, el) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    // Sync tab bars
+    updateTabBars(name);
+  }
+
+  function connectToPairedDevice(host, port) {
+    closePairedDevicesSheet();
+    showToast('正在验证设备身份...');
+    setTimeout(() => {
+      showToast('验证成功');
+      navTo('main');
+    }, 1000);
+  }
+
+  function openPairedDevicesSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('paired-bottom-sheet').classList.add('show');
+  }
+
+  function closePairedDevicesSheet() {
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('paired-bottom-sheet').classList.remove('show');
+  }
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    updateTabBars(name);
+    // Sync dev nav
+    const navMap = { pairing: 0, main: 1, sub: 2, browse: 3 };
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === navMap[name]);
+    });
+  }
+
+  function updateTabBars(activeScreen) {
+    const tabIndex = tabOrder.indexOf(activeScreen);
+    document.querySelectorAll('.tab-bar').forEach(bar => {
+      bar.querySelectorAll('.tab-item').forEach((item, i) => {
+        item.classList.toggle('active', i === tabIndex);
+      });
+    });
+  }
+
+  // ── Pairing: Scanning simulation ──
+  (function simulateScan() {
+    const fill = document.getElementById('scan-fill');
+    const status = document.getElementById('scan-status');
+    let pct = 0;
+    const interval = setInterval(() => {
+      pct += Math.random() * 15;
+      if (pct >= 100) {
+        pct = 100;
+        clearInterval(interval);
+        status.textContent = '扫描完成，发现 1 台服务器';
+      } else {
+        status.textContent = `正在扫描... ${Math.floor(pct)}%`;
+      }
+      fill.style.width = pct + '%';
+    }, 300);
+  })();
+
+  function connectToServer(host, port) {
+    showCodeEntry(host, port);
+  }
+
+  function manualConnect() {
+    const host = document.getElementById('manual-host').value.trim();
+    const port = document.getElementById('manual-port').value.trim() || '8765';
+    if (!host) {
+      showToast('请输入服务器 IP');
+      return;
+    }
+    showCodeEntry(host, parseInt(port));
+  }
+
+  function showCodeEntry(host, port) {
+    document.getElementById('pair-scan').style.display = 'none';
+    document.getElementById('pair-code').classList.add('active');
+    document.getElementById('code-input').focus();
+    // Start countdown
+    startExpiryTimer(300);
+  }
+
+  let expiryInterval;
+  function startExpiryTimer(seconds) {
+    clearInterval(expiryInterval);
+    let remaining = seconds;
+    const el = document.getElementById('code-expire');
+    function tick() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      el.textContent = `验证码有效时间: ${m}:${String(s).padStart(2, '0')}`;
+      remaining--;
+      if (remaining < 0) {
+        clearInterval(expiryInterval);
+        el.textContent = '验证码已过期';
+        el.style.color = 'var(--error)';
+      }
+    }
+    tick();
+    expiryInterval = setInterval(tick, 1000);
+  }
+
+  function onCodeInput(input) {
+    const val = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    input.value = val;
+    document.getElementById('pair-submit-btn').disabled = val.length < 6;
+  }
+
+  function onCodeKey(input, e) {
+    if (e.key === 'Enter' && input.value.length === 6) {
+      submitPairing();
+    }
+  }
+
+  function submitPairing() {
+    const code = document.getElementById('code-input').value;
+    if (code.length !== 6) return;
+    const btn = document.getElementById('pair-submit-btn');
+    btn.textContent = '正在提交...';
+    btn.disabled = true;
+    setTimeout(() => {
+      clearInterval(expiryInterval);
+      showToast('✅ 配对成功');
+      setTimeout(() => switchTab('main'), 500);
+    }, 1000);
+  }
+
+  function cancelPairing() {
+    clearInterval(expiryInterval);
+    document.getElementById('pair-code').classList.remove('active');
+    document.getElementById('pair-scan').style.display = 'flex';
+    document.getElementById('code-input').value = '';
+    document.getElementById('pair-error').classList.remove('show');
+    document.getElementById('pair-submit-btn').textContent = '提交配对';
+    document.getElementById('pair-submit-btn').disabled = true;
+  }
+
+  // ── Playback ──
+  function togglePlay() {
+    isPlaying = !isPlaying;
+    const btn = document.getElementById('play-btn');
+    const label = document.getElementById('np-label');
+    btn.textContent = isPlaying ? '⏸' : '▶';
+    const name = label.textContent.replace(/^[▶⏸]\s*/, '');
+    label.textContent = (isPlaying ? '▶ ' : '⏸ ') + name;
+    label.className = 'np-label' + (isPlaying ? ' playing' : '');
+  }
+
+  function skip(seconds) {
+    const cur = progress / 100 * duration;
+    const newTime = Math.max(0, Math.min(duration, cur + seconds));
+    progress = newTime / duration * 100;
+    document.getElementById('seek-slider').value = progress;
+    updateTimeDisplay();
+    showToast((seconds > 0 ? '+' : '') + seconds + 's');
+  }
+
+  function skipTrack(dir) {
+    const items = document.querySelectorAll('.pl-item');
+    const newIdx = Math.max(0, Math.min(items.length - 1, currentItem + dir));
+    if (newIdx !== currentItem) jumpToItem(newIdx, items[newIdx]);
+  }
+
+  function setVolume(val) {
+    volume = parseInt(val);
+    const icon = document.getElementById('vol-icon');
+    isMuted = volume === 0;
+    icon.textContent = volume === 0 ? '🔇' : volume < 50 ? '🔉' : '🔊';
+  }
+
+  function setSystemVolume(val) {
+    systemVolume = parseInt(val);
+    const icon = document.getElementById('system-vol-icon');
+    icon.textContent = systemVolume === 0 ? '🔇' : systemVolume < 50 ? '🔉' : '🔊';
+  }
+
+  let systemVolumeBeforeMute = 70;
+
+  function toggleSystemMute() {
+    const slider = document.getElementById('system-vol-slider');
+    const icon = document.getElementById('system-vol-icon');
+    if (systemVolume === 0) {
+      // Unmute: restore previous volume
+      systemVolume = systemVolumeBeforeMute;
+    } else {
+      // Mute: save current and set to 0
+      systemVolumeBeforeMute = systemVolume;
+      systemVolume = 0;
+    }
+    slider.value = systemVolume;
+    icon.textContent = systemVolume === 0 ? '🔇' : systemVolume < 50 ? '🔉' : '🔊';
+  }
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    const slider = document.getElementById('vol-slider');
+    if (isMuted) {
+      slider.value = 0;
+      document.getElementById('vol-icon').textContent = '🔇';
+    } else {
+      slider.value = volume || 70;
+      document.getElementById('vol-icon').textContent = volume < 50 ? '🔉' : '🔊';
+    }
+  }
+
+  function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
+    const btn = document.getElementById('fullscreen-btn');
+    const icon = document.getElementById('fullscreen-icon');
+    const label = document.getElementById('fullscreen-label');
+    if (isFullscreen) {
+      btn.classList.add('active');
+      icon.textContent = '⛷';
+      label.textContent = '退出全屏';
+    } else {
+      btn.classList.remove('active');
+      icon.textContent = '⛶';
+      label.textContent = '全屏';
+    }
+    showToast(isFullscreen ? '已全屏' : '已退出全屏');
+  }
+
+  function seekTo(val) {
+    progress = parseFloat(val);
+    updateTimeDisplay();
+  }
+
+  function updateTimeDisplay() {
+    const cur = Math.floor(progress / 100 * duration);
+    document.getElementById('np-time').textContent = formatTime(cur);
+  }
+
+  function formatTime(s) {
+    if (s <= 0) return '0:00';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  // ── Speed (tick mark slider: 0.25, 0.5, 1, 2, 4, 8, 16) ──
+  const speedNodes = [0.25, 0.5, 1, 2, 4, 8, 16];
+
+  function speedToNodeIndex(speed) {
+    let closest = 0;
+    let minDiff = Math.abs(speed - speedNodes[0]);
+    for (let i = 1; i < speedNodes.length; i++) {
+      const diff = Math.abs(speed - speedNodes[i]);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = i;
+      }
+    }
+    return closest;
+  }
+
+  function updateSpeedUI(speed) {
+    const valueEl = document.getElementById('speed-value');
+    const slider = document.getElementById('speed-slider');
+    const nodeIndex = speedToNodeIndex(speed);
+    const actualSpeed = speedNodes[nodeIndex];
+    if (valueEl) valueEl.textContent = 'x' + actualSpeed.toFixed(2);
+    if (slider) slider.value = nodeIndex;
+  }
+
+  function setSpeedFromSlider(val) {
+    const nodeIndex = parseInt(val);
+    const speed = speedNodes[nodeIndex];
+    currentSpeed = speed;
+    updateSpeedUI(speed);
+    updateSpeedSheetDisplay();
+    updateSpeedFill(nodeIndex);
+    showToast(speed === 1.0 ? '恢复正常速度' : `播放速度: ${speed}x`);
+  }
+
+  function updateSpeedFill(nodeIndex) {
+    const fill = document.getElementById('speed-fill');
+    if (fill) {
+      const pct = (nodeIndex / 6) * 100;
+      fill.style.width = pct + '%';
+    }
+  }
+
+  function applySpeedMultiplier(multiplier) {
+    const targetSpeed = currentSpeed * multiplier;
+    const nodeIndex = speedToNodeIndex(targetSpeed);
+    setSpeedFromSlider(nodeIndex);
+  }
+
+  function resetSpeed() {
+    const nodeIndex = speedToNodeIndex(1.0);
+    setSpeedFromSlider(nodeIndex);
+  }
+
+  function setSpeed(speed) {
+    currentSpeed = speed;
+    updateSpeedUI(speed);
+    showToast(speed === 1.0 ? '恢复正常速度' : `播放速度: ${speed}x`);
+  }
+
+  function selectSpeed(speed) {
+    const nodeIndex = speedToNodeIndex(speed);
+    const actualSpeed = speedNodes[nodeIndex];
+    setSpeed(actualSpeed);
+    // Update sheet options
+    document.querySelectorAll('#speed-sheet .sheet-option').forEach(opt => {
+      const optSpeed = opt.textContent.includes('正常') ? 1.0 : parseFloat(opt.textContent);
+      opt.classList.toggle('active', Math.abs(optSpeed - actualSpeed) < 0.01);
+      opt.querySelector('.sheet-option-check')?.remove();
+      if (Math.abs(optSpeed - actualSpeed) < 0.01) {
+        opt.insertAdjacentHTML('beforeend', ' <span class="sheet-option-check">✓</span>');
+      }
+    });
+    closeAllSheets();
+  }
+
+  // ── Playlist ──
+  function togglePlaylist() {
+    const panel = document.getElementById('playlist-panel');
+    panel.classList.toggle('collapsed');
+  }
+
+  function jumpToItem(idx, el) {
+    currentItem = idx;
+    const items = document.querySelectorAll('.pl-item');
+    items.forEach((item, i) => {
+      if (i === idx) {
+        item.classList.add('active');
+        item.querySelector('.pl-index').textContent = '▶';
+        const name = item.querySelector('.pl-name').textContent;
+        document.getElementById('np-label').textContent = '▶ ' + name;
+      } else {
+        item.classList.remove('active');
+        item.querySelector('.pl-index').textContent = '第' + (i + 1) + '集';
+      }
+    });
+    document.getElementById('playlist-panel').classList.add('collapsed');
+    showToast('已切换: ' + el.querySelector('.pl-name').textContent);
+  }
+
+  // ── Video Control Sheet ──
+  function openVideoControlSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('video-control-sheet').classList.add('show');
+    switchVcTab(0, document.querySelector('.vc-tab-btn'));
+  }
+
+  function switchVcTab(idx, btn) {
+    document.querySelectorAll('.vc-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('vc-chapter').style.display = idx === 0 ? 'block' : 'none';
+    document.getElementById('vc-aspect').style.display = idx === 1 ? 'block' : 'none';
+    document.getElementById('vc-abloop').style.display = idx === 2 ? 'block' : 'none';
+    document.getElementById('vc-speed').style.display = idx === 3 ? 'block' : 'none';
+    if (idx === 3) {
+      updateSpeedSheetDisplay();
+      const slider = document.getElementById('speed-slider');
+      if (slider) updateSpeedFill(parseInt(slider.value));
+    }
+  }
+
+  // ── Extra Controls: Chapter / Aspect / AB Loop ──
+  function openChapterSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('chapter-sheet').classList.add('show');
+  }
+
+  function seekToChapter(index) {
+    const times = [0, 135, 930, 2100, 3140];
+    progress = times[index] / duration * 100;
+    document.getElementById('seek-slider').value = progress;
+    updateTimeDisplay();
+    closeAllSheets();
+    showToast('已跳转到章节');
+  }
+
+  function openAspectSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('aspect-sheet').classList.add('show');
+  }
+
+  function openSpeedSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('speed-sheet').classList.add('show');
+    updateSpeedSheetDisplay();
+    const slider = document.getElementById('speed-slider');
+    if (slider) updateSpeedFill(parseInt(slider.value));
+  }
+
+  function positionSpeedTicks() {
+    const wrap = document.querySelector('.speed-sheet .speed-slider-wrap');
+    const track = document.querySelector('.speed-sheet .speed-slider-track');
+    const ticks = document.querySelectorAll('.speed-sheet .speed-tick');
+    if (!track || !ticks.length) return;
+    const w = track.offsetWidth;
+    const h = 20;
+    const travel = w - h;
+    ticks.forEach((tick, i) => {
+      const px = (i / 6) * travel + h / 2;
+      tick.style.left = px + 'px';
+    });
+    const first = ticks[0], last = ticks[ticks.length - 1];
+    if (first) first.style.left = (h / 2) + 'px';
+    if (last) last.style.left = (w - h / 2) + 'px';
+  }
+
+  function updateSpeedSheetDisplay() {
+    const displayEl = document.getElementById('speed-display');
+    const sliderEl = document.getElementById('speed-slider');
+    if (displayEl && sliderEl) {
+      const speed = speedNodes[parseInt(sliderEl.value)];
+      displayEl.textContent = 'x' + speed.toFixed(2);
+    }
+  }
+
+  function selectAspect(el, value) {
+    document.querySelectorAll('#aspect-sheet .sheet-option').forEach(opt => {
+      opt.classList.remove('active');
+      opt.querySelector('.sheet-option-check')?.remove();
+    });
+    el.classList.add('active');
+    el.insertAdjacentHTML('beforeend', ' <span class="sheet-option-check">✓</span>');
+    closeAllSheets();
+    showToast('画面比例: ' + (value === 'default' ? '默认' : value));
+  }
+
+  function openABLoopSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('ab-loop-sheet').classList.add('show');
+  }
+
+  function setABPoint(point) {
+    const cur = Math.floor(progress / 100 * duration);
+    if (point === 'A') {
+      abA = cur;
+      document.getElementById('ab-a-time').textContent = formatTime(cur);
+      document.getElementById('ab-set-a-btn').className = 'ab-btn set-a';
+      showToast('已设置 A 点: ' + formatTime(cur));
+    } else {
+      abB = cur;
+      document.getElementById('ab-b-time').textContent = formatTime(cur);
+      document.getElementById('ab-set-b-btn').className = 'ab-btn set-b';
+      showToast('已设置 B 点: ' + formatTime(cur));
+    }
+  }
+
+  function clearABLoop() {
+    abA = null;
+    abB = null;
+    document.getElementById('ab-a-time').textContent = '未设置';
+    document.getElementById('ab-b-time').textContent = '未设置';
+    document.getElementById('ab-set-a-btn').className = 'ab-btn';
+    document.getElementById('ab-set-b-btn').className = 'ab-btn';
+    closeAllSheets();
+    showToast('已清除 A-B 循环');
+  }
+
+  // ── Sub/Audio ──
+  function showSubTab(idx, btn) {
+    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('subtitle-panel').style.display = idx === 0 ? 'flex' : 'none';
+    document.getElementById('audio-panel').style.display = idx === 1 ? 'flex' : 'none';
+  }
+
+  function selectTrack(el) {
+    const list = el.parentElement;
+    list.querySelectorAll('.track-item').forEach(t => t.classList.remove('selected'));
+    el.classList.add('selected');
+    const label = el.querySelector('.track-label').textContent;
+    showToast('已切换: ' + label.slice(0, 20));
+  }
+
+  function adjustDelay(ms) {
+    currentDelay += ms;
+    showToast('延迟: ' + (currentDelay > 0 ? '+' : '') + (currentDelay / 1000).toFixed(1) + 's');
+  }
+
+  let subtitleZoom = 0; // slider value: -10 to 20, scale = 2^(value/10)
+
+  const SUBTITLE_ZOOM_TICKS = [
+    { sliderVal: -10, label: '-x2' },
+    { sliderVal: 0, label: '1x' },
+    { sliderVal: 10, label: '2x' },
+    { sliderVal: 20, label: '4x' }
+  ];
+
+  function drawZoomTicks() {
+    const container = document.getElementById('zoom-tick-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    SUBTITLE_ZOOM_TICKS.forEach(tick => {
+      const item = document.createElement('div');
+      item.className = 'zoom-tick-item';
+      item.innerHTML = `<div class="zoom-tick-line"></div><span class="zoom-tick-text">${tick.label}</span>`;
+      container.appendChild(item);
+    });
+  }
+
+  function adjustSubtitleZoom(delta) {
+    subtitleZoom = Math.max(-10, Math.min(20, subtitleZoom + delta));
+    document.getElementById('zoom-slider').value = subtitleZoom;
+    updateSubtitleZoomDisplay(subtitleZoom);
+  }
+
+  function setSubtitleZoom(val) {
+    subtitleZoom = parseInt(val);
+    updateSubtitleZoomDisplay(subtitleZoom);
+  }
+
+  function updateSubtitleZoomDisplay(sliderVal) {
+    const mpvScale = Math.pow(2, sliderVal / 10);
+    // Display format: 0.5x as "-x2", others as "x1", "x2", etc.
+    let displayText;
+    if (Math.abs(mpvScale - 0.5) < 0.01) {
+      displayText = '-x2';
+    } else {
+      const rounded = Math.round(mpvScale * 100) / 100;
+      const isInt = Math.abs(rounded - Math.round(rounded)) < 0.01;
+      displayText = 'x' + (isInt ? Math.round(rounded) : rounded.toFixed(1));
+    }
+    document.getElementById('zoom-value').textContent = displayText;
+    showToast('字幕缩放: ' + displayText);
+  }
+
+  window.addEventListener('load', () => requestAnimationFrame(drawZoomTicks));
+  window.addEventListener('resize', drawZoomTicks);
+  // Also draw immediately after script loads with a small delay
+  setTimeout(() => requestAnimationFrame(drawZoomTicks), 100);
+
+  // ── File Browser ──
+  function selectFile(el, name) {
+    document.querySelectorAll('.browse-entry').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedFileName = name;
+  }
+
+  function openFile(name) {
+    const dialog = document.getElementById('loading-dialog');
+    dialog.classList.add('show');
+    setTimeout(() => {
+      dialog.classList.remove('show');
+      showToast('已在 IINA 中打开: ' + name);
+      setTimeout(() => switchTab('main'), 400);
+    }, 1200);
+  }
+
+  function navigateFolder(name, el) {
+    showToast('进入目录: ' + name + '/');
+  }
+
+  function breadcrumbTo(index) {
+    const names = ['根目录', 'Volumes', 'Video'];
+    showToast('返回: ' + names[index]);
+  }
+
+  // ── Menu & Settings ──
+  function openMenu() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('menu-sheet').classList.add('show');
+  }
+
+  function openSettings() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('settings-sheet').classList.add('show');
+  }
+
+  function closeAllSheets() {
+    document.getElementById('overlay').classList.remove('show');
+    document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
+    document.getElementById('paired-bottom-sheet').classList.remove('show');
+  }
+
+  function handleDisconnect() {
+    closeAllSheets();
+    showToast('已断开连接');
+    // Reset pairing screen
+    setTimeout(() => {
+      cancelPairing();
+      navTo('pairing', document.querySelectorAll('.nav-item')[0]);
+    }, 1000);
+  }
+
+  // ── Toast ──
+  let toastTimeout;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Progress Drag ──
+  let dragging = false;
+  const seekSlider = document.getElementById('seek-slider');
+
+  seekSlider.addEventListener('mousedown', (e) => { dragging = true; });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    updateTimeDisplay();
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  // Init
+  updateTimeDisplay();
+</script>
+</body>
+</html>
