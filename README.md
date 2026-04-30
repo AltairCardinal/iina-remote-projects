@@ -2,7 +2,9 @@
 
 从 Android 手机远程控制 Mac 上 [IINA 播放器](https://iina.io) 的完整解决方案。
 
-[Interactive Prototype](https://raw.githack.com/AltairCardinal/iina-remote-projects/master/docs/prototype.html) | [English](#english) | [中文](#中文)
+## 快速预览
+
+[交互原型演示](https://raw.githack.com/AltairCardinal/iina-remote-projects/master/docs/prototype.html) — 无需安装，直接在浏览器中体验完整 UI 交互
 
 ---
 
@@ -12,10 +14,6 @@
 - **文件浏览** — 从手机端浏览并打开 Mac 上的媒体文件
 - **配对连接** — 扫码或输入验证码安全配对设备
 - **多语言支持** — 中文、English
-
-## 快速预览
-
-点击上方 **Interactive Prototype** 链接，无需安装即可体验完整的 UI 交互（文件浏览、配对流程、播放控制）。
 
 ## 项目结构
 
