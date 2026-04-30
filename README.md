@@ -127,6 +127,34 @@ adb install android/app/build/outputs/apk/release/app-release.apk
 | Android | Kotlin, Jetpack Compose, Retrofit |
 | UI Design | Figma |
 
+## 开发路线图
+
+以下是我们计划的未来功能开发方向：
+
+### 🔄 进行中
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| **网页版遥控端** | 由 Server 提供，扫码即可访问。已实现 Android App 逻辑的 Web 版本，配对流程尚未跑通 | 🔄 开发中 |
+
+### 📋 计划中
+
+| 功能 | 说明 |
+|------|------|
+| **初次启动配置向导** | 首次启动时引导用户配置：媒体目录选择、界面语言偏好 |
+| **多播放器支持** | 扩展支持其他主流播放器（如 VLC、MPV） |
+| **Windows 支持** | 开发 Windows 版 Server 与配套工具 |
+
+### ✅ 已完成
+
+- [x] Android 遥控 App
+- [x] macOS Menu Bar App
+- [x] Go Server 核心服务
+- [x] 多语言支持
+- [x] 文件浏览与播放控制
+
+---
+
 ## License
 
 本项目采用 [GNU Affero General Public License v3.0](https://opensource.org/licenses/AGPL-3.0) 开源。
@@ -182,3 +210,29 @@ Android App  ←→  Go Server  ←→  IINA (mpv)
 ### License
 
 This project is open source under [GNU Affero General Public License v3.0](https://opensource.org/licenses/AGPL-3.0).
+
+---
+
+## Roadmap
+
+### 🔄 In Progress
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Web Remote UI** | Served by Server, accessible via QR code. Android app logic converted to web version, pairing flow not yet working | 🔄 In Progress |
+
+### 📋 Planned
+
+| Feature | Description |
+|---------|-------------|
+| **Initial Setup Wizard** | First-launch setup: media folder selection, language preference |
+| **Multi-Player Support** | Extend support to other mainstream players (VLC, MPV) |
+| **Windows Support** | Windows Server and companion tools |
+
+### ✅ Completed
+
+- [x] Android Remote App
+- [x] macOS Menu Bar App
+- [x] Go Server core service
+- [x] Multi-language support
+- [x] File browser and playback control
