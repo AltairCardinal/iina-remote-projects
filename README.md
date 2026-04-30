@@ -2,7 +2,7 @@
 
 从 Android 手机远程控制 Mac 上 [IINA 播放器](https://iina.io) 的完整解决方案。
 
-[Interactive Prototype](https://cdn.jsdelivr.net/gh/AltairCardinal/iina-remote-projects@master/docs/prototype.html) | [English](#english) | [中文](#中文)
+[Interactive Prototype](https://raw.githack.com/AltairCardinal/iina-remote-projects/master/docs/prototype.html) | [English](#english) | [中文](#中文)
 
 ---
 
