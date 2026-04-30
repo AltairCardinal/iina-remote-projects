@@ -29,7 +29,7 @@ cd ../android && ./gradlew assembleDebug
 
 # Or build individually:
 # Server
-cd server && go build -ldflags "-X main.version=0.8.$(date +%y%m%d%H%M)" -o iina-remote-server .
+cd server && go build -ldflags "-X main.version=1.0.0" -o iina-remote-server .
 
 # macOS
 cd ../macos && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Release build
@@ -40,7 +40,7 @@ cd ../android && ./gradlew assembleRelease
 
 ## Build Version System
 
-All platforms use the same version format: `0.8.YYMMddHHmm` (e.g., `0.8.2604221957`)
+All platforms use the same version format: `1.0.0`
 
 ### Version generation
 
@@ -58,9 +58,9 @@ After building, verify the version:
 # Server
 ./iina-remote-server --version
 
-# macOS: check status bar menu → "版本 0.8.xxxxxx"
+# macOS: check status bar menu → "版本 1.0.0"
 
-# Android: Settings → About → version 0.8.xxxxxx
+# Android: Settings → About → version 1.0.0
 ```
 
 ## Build artifact reporting

@@ -84,7 +84,7 @@ cd ../android/ && ./gradlew assembleDebug
 ./BUILD_RELEASE.sh
 
 # 或分别构建
-cd server/ && go build -ldflags "-X main.version=0.8.$(date +%y%m%d%H%M)" -o iina-remote-server .
+cd server/ && go build -ldflags "-X main.version=1.0.0" -o iina-remote-server .
 cd ../macos/ && xcodegen generate && xcodebuild -project IINARemote.xcodeproj -scheme IINARemote -configuration Release build
 cd ../android/ && ./gradlew assembleRelease
 ```

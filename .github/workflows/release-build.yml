@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 0.8.2604301200)'
+        description: 'Version (e.g., 1.0.0)'
         required: false
-        default: ''
+        default: '1.0.0'
 
 env:
-  VERSION: ${{ github.event.inputs.version || '0.8.2604300000' }}
+  VERSION: ${{ github.event.inputs.version || '1.0.0' }}
 
 jobs:
   build-server:
