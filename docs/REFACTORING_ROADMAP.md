@@ -1,8 +1,52 @@
 # Server 架构重构执行方案
 
 **文档日期**: 2026-05-11
-**状态**: 待执行
-**问题**: `iina/applescript.go` 仍是 1710 行单文件，混合了 IPC、AppleScript、类型定义
+**状态**: ✅ 已完成
+**完成日期**: 2026-05-11
+**合并提交**: `6b8c696` (server), `a0e5aec` (parent)
+
+---
+
+## 执行结果
+
+### 重构前 (master @ cffa0cc)
+```
+server/iina/
+├── applescript.go    # 1710行，混合所有功能 ❌
+├── ipc_test.go
+└── applescript_test.go
+```
+
+### 重构后 (master @ 6b8c696)
+```
+server/iina/
+├── applescript.go    # 494行，AppleScript 执行核心 ✅
+├── ipc.go            # 347行，IPC 通信核心 ✅
+├── playback.go       # 548行，播放控制函数 ✅
+├── status.go         # 166行，状态查询函数 ✅
+├── types.go          # 85行，类型定义 ✅
+├── ipc_test.go
+└── applescript_test.go
+```
+
+### 代码行数变化
+| 文件 | 重构前 | 重构后 | 变化 |
+|------|--------|--------|------|
+| applescript.go | 1710 | 494 | -1216 行 |
+| ipc.go | 0 | 347 | +347 行 |
+| playback.go | 0 | 548 | +548 行 |
+| status.go | 0 | 166 | +166 行 |
+| types.go | 0 | 85 | +85 行 |
+| **总计** | 1710 | 1640 | -70 行 |
+
+---
+
+## 附带修复
+
+本次重构合并时同时修复了两个 bug：
+
+1. **SeekTo()** - 使用 `seek` 命令替代 `set_property time-pos`（只读属性）
+2. **Seek()** - 移除 300 秒跳转限制
 
 ---
 
