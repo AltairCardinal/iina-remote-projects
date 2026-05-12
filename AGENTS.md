@@ -129,6 +129,66 @@ Do not write production code without a corresponding failing test. Do not skip t
 - Uses version catalog (`gradle/libs.versions.toml`) for dependencies.
 - `compileSdk = 35`, Java 21 compatibility.
 
+## Android Build Troubleshooting
+
+### 正确构建方式
+
+**重要：始终使用 `--no-daemon` 参数**
+
+```bash
+cd /Volumes/File/OpenClaw/workspace/iina-remote-projects/android
+./gradlew assembleDebug --no-daemon
+```
+
+### Gradle Daemon Hang 问题
+
+**症状**：构建在 `dexBuilderDebug`、`mergeExtDexDebug` 或 `mergeDebugGlobalSynthetics` 阶段卡住，CPU 占用 100-200%+ 但 30+ 分钟无进展。
+
+**根因**：Gradle Daemon 进程卡死（可能运行了数小时），后续所有 `./gradlew` 调用都连接到这个卡死的进程，导致全部 hang。
+
+**排查步骤**：
+
+1. 检查是否有残留的 Gradle daemon 进程：
+   ```bash
+   ps aux | grep -E "gradle|java" | grep -v grep
+   ```
+
+2. 如果有长时间运行的 java 进程（数小时），说明 daemon 卡死了
+
+3. 杀掉所有残留进程：
+   ```bash
+   pkill -9 -f "GradleDaemon"
+   pkill -9 -f "kotlin"
+   ```
+
+4. 清理 Gradle 缓存和残留文件：
+   ```bash
+   rm -rf ~/.gradle/caches/8.13
+   rm -rf ~/.gradle/daemon
+   rm -rf android/.gradle
+   rm -rf android/app/.gradle
+   rm -rf android/app/build
+   ```
+
+5. 确认 `gradle.properties` 中有 `org.gradle.daemon=false`：
+   ```properties
+   org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
+   org.gradle.daemon=false
+   org.gradle.parallel=true
+   org.gradle.caching=true
+   ```
+
+6. 使用 `--no-daemon` 重新构建：
+   ```bash
+   ./gradlew assembleDebug --no-daemon
+   ```
+
+### 环境要求
+
+- **Java**: JDK 21 (需要 JAVA_HOME 指向 `/Users/altair/.jdks/jdk-21.0.10+7/Contents/Home`)
+- **Gradle**: 使用项目 wrapper (`./gradlew`)，不要使用系统 Gradle
+- **内存**: 4GB heap 适合 Android + Compose 项目
+
 ## Key docs to read before editing
 
 | File | Why |
